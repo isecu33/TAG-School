@@ -1,0 +1,19 @@
+{
+    "name": "PieceBook.Spike",
+    "rootNamespace": "PieceBook.Spike",
+    "references": [
+        "PieceBook.Core",
+        "PieceBook.DrawingEngine",
+        "Unity.InputSystem",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
