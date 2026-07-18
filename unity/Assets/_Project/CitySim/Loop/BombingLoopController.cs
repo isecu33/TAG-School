@@ -1,5 +1,6 @@
 using PieceBook.CitySim.AI;
 using PieceBook.CitySim.Data;
+using PieceBook.CitySim.Events;
 using PieceBook.CitySim.Player;
 using PieceBook.CitySim.UI;
 using PieceBook.CitySim.World;
@@ -17,6 +18,7 @@ namespace PieceBook.CitySim.Loop
     {
         private const float PaintRange = 1.7f;
         private const float WalkSpeed = 3.2f;
+        private const float RunSpeed = 4.4f;
 
         private EventBus _bus;
         private InputReader _input;
@@ -25,6 +27,8 @@ namespace PieceBook.CitySim.Loop
         private CitySimHud _hud;
         private ZoneDef _zone;
         private CityView _city;
+        private PatrolAgent _patrol;
+        private ZoneBlackboard _blackboard;
 
         private LoopPhase _phase = LoopPhase.Explore;
         private SurfaceMarker _nearSurface;
@@ -32,7 +36,8 @@ namespace PieceBook.CitySim.Loop
         public LoopPhase Phase => _phase;
 
         public void Init(EventBus bus, InputReader input, PlayerController player,
-                         IsoCameraRig camera, CitySimHud hud, ZoneDef zone, CityView city)
+                         IsoCameraRig camera, CitySimHud hud, ZoneDef zone, CityView city,
+                         PatrolAgent patrol, ZoneBlackboard blackboard)
         {
             _bus = bus;
             _input = input;
@@ -41,6 +46,8 @@ namespace PieceBook.CitySim.Loop
             _hud = hud;
             _zone = zone;
             _city = city;
+            _patrol = patrol;
+            _blackboard = blackboard;
             _camera.Follow(_player.transform);
         }
 
@@ -53,9 +60,12 @@ namespace PieceBook.CitySim.Loop
             switch (_phase)
             {
                 case LoopPhase.Explore: TickExplore(dt); break;
+                case LoopPhase.Chase: TickChase(dt); break;
             }
 
             _hud.SetPhase(_phase);
+            if (_patrol != null)
+                _hud.SetAlert(_patrol.State, _patrol.Suspicion, _blackboard != null ? _blackboard.Heat : 0f);
         }
 
         private void TickExplore(float dt)
@@ -69,10 +79,30 @@ namespace PieceBook.CitySim.Loop
 
             if (_nearSurface != null && _input.InteractPressed)
                 StartPainting(_nearSurface);
+
+            if (_patrol != null && _patrol.IsChasing)
+                EnterPhase(LoopPhase.Chase);
         }
 
-        // Filled in point 4 (first-person painting). Stubbed so Explore is runnable now.
+        // Minimal chase for point 2 (run + camera). Hide + Caught/Escaped land in point 5.
+        private void TickChase(float dt)
+        {
+            _player.Drive(_input.Move, RunSpeed);
+            _hud.SetPrompt("¡Te han visto! Corre y rompe la línea de visión");
+            if (_patrol != null && !_patrol.IsChasing)
+                EnterPhase(LoopPhase.Explore);
+        }
+
+        // Filled in point 4 (first-person painting).
         private void StartPainting(SurfaceMarker surface) { }
+
+        private void EnterPhase(LoopPhase next)
+        {
+            if (next == _phase) return;
+            var prev = _phase;
+            _phase = next;
+            _bus?.Publish(new LoopPhaseChanged(prev, next));
+        }
 
         private SurfaceMarker FindNearestSurface(float range)
         {
