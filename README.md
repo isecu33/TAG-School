@@ -1,48 +1,73 @@
-# TAG-School — Drawing Engine Spike (Fase 0)
+# TAG-School — *learn how to graffiti*
 
-Prototipo del **Drawing Engine** de *PIECEBOOK / TAG-School* para validar **latencia** y
-**feel** del spray antes de comprometer la Fase 1. Es un spike GO/NO-GO: motor de pintura
-real (stamping por GPU, caps data-driven, drips procedurales) + una escena de prueba con
-instrumentación de métricas. **No** incluye lecciones, RA, backend ni arte final.
+Juego iOS/Android que enseña graffiti real. Este repositorio arranca por la **Fase 0
+(spike GO/NO-GO)**: un prototipo del **Drawing Engine** en Unity para validar **latencia** y
+**feel** del spray antes de comprometer la Fase 1.
 
-> Fuente de verdad: `ARQUITECTURA.md`. Este repo implementa §4 (Drawing Engine), respeta la
-> API pública de §4.3 y la estructura de §8. Ver `Assets/_Project/MODULES.md`.
+- **Fuente de verdad:** [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md). El motor implementa §4,
+  respeta la API pública de §4.3 y la estructura de módulos/asmdefs de §8.
+- **Proyecto Unity:** [`/unity`](unity) (Unity 2022 LTS · URP). La estructura interna sigue §8
+  (`unity/Assets/_Project/...`, `unity/Tests/...`).
+- **Veredicto y métricas:** [`INFORME-GO-NOGO.md`](INFORME-GO-NOGO.md).
+
+Alcance Fase 0: solo el Drawing Engine (ENG-01…ENG-04). **No** incluye lecciones, RA, backend
+ni arte final.
+
+---
+
+## Checklist Fase 0 (ENG-01 → ENG-04)
+
+- [x] **ENG-01** · Canvas sobre RenderTexture 2048² con stamping por GPU
+      (`CommandBuffer` / `DrawMeshInstanced`, **nunca `SetPixels`**)
+- [x] **ENG-01** · Input táctil + soporte de presión (Apple Pencil / touch / mouse)
+- [x] **ENG-02** · `StrokeConfig` + 3 `CapDef` (skinny 4° / soft 12° / fat 25°) + `PaintDef` como ScriptableObjects
+- [x] **ENG-02** · Slider de distancia de boquilla que modifica cono/borde/overspray en vivo
+- [x] **ENG-03** · Interpolación Catmull-Rom del input
+- [x] **ENG-03** · Object pool de partículas — **cero GC allocs durante un trazo**
+- [x] **ENG-04** · Drips procedurales al superar `dripThreshold`
+- [x] Escena de prueba (pared texturizada + selector de 3 caps + slider de distancia)
+- [x] API pública `IDrawingCanvas` exacta de §4.3
+- [x] Instrumentación de aceptación en pantalla: latencia input→submit y FPS
+- [x] Informe GO/NO-GO
+- [ ] **Métricas medidas en dispositivo** (iPhone 11 / Android gama media) — pendiente de
+      hardware; ver tabla en `INFORME-GO-NOGO.md §3`
+
+> La única casilla abierta requiere ejecutar el Profiler en dispositivo físico, que no puede
+> hacerse en el entorno de construcción. El motor y el instrumental de medición están listos.
 
 ---
 
 ## Requisitos
 
 - **Unity 2022.3 LTS** (probado contra 2022.3.40f1; cualquier parche 2022.3.x sirve).
-- Módulos de build **iOS** y/o **Android** si vas a desplegar en dispositivo.
-- Paquetes (ya declarados en `Packages/manifest.json`, se resuelven al abrir):
-  URP 14, **Input System** 1.7, uGUI, Test Framework.
+- Módulos de build **iOS** y/o **Android** para desplegar en dispositivo.
+- Paquetes (declarados en `unity/Packages/manifest.json`): URP 14, **Input System** 1.7, uGUI,
+  Test Framework. Se resuelven al abrir.
 
 Al abrir por primera vez, si Unity pregunta por el backend de input, elige **Both** o
-**Input System** (el código soporta ambos, pero el Pencil/presión solo llega vía Input System).
+**Input System** (el código soporta ambos; la presión del Pencil solo llega vía Input System).
 
 ---
 
 ## Cómo abrir y probar (editor)
 
-1. Abre el proyecto con Unity 2022.3 LTS (Unity Hub → *Add* → esta carpeta).
+1. Unity Hub → **Add** → selecciona la carpeta **`unity/`** de este repo. Ábrela con 2022.3 LTS.
 2. Menú **`TAG-School ▸ Setup Phase 0 Spike`**. Esto:
-   - genera los ScriptableObjects de `_Project/Content` (3 caps + paint),
+   - genera los ScriptableObjects de `unity/Assets/_Project/Content` (3 caps + paint),
    - registra el shader `PieceBook/SprayStamp` en *Always Included Shaders* (para builds),
-   - construye y guarda la escena `Assets/_Project/Spike/Scenes/SpraySpike.unity` y la mete en Build Settings.
+   - construye y guarda la escena `unity/Assets/_Project/Spike/Scenes/SpraySpike.unity` y la añade a Build Settings.
 3. Pulsa **Play**. Pinta sobre la pared con ratón (editor) o dedo/Pencil (dispositivo).
 
-> Atajo total: también puedes crear una escena vacía, añadir el componente
-> **`SprayDemoBootstrap`** a un GameObject y darle a Play — se auto-ensambla (cámara, pared,
-> canvas, input y HUD) y crea caps por defecto si no hay assets.
+> Atajo: crea una escena vacía, añade el componente **`SprayDemoBootstrap`** a un GameObject y
+> dale a Play — se auto-ensambla (cámara, pared, canvas, input y HUD) y crea caps por defecto.
 
 ### Controles del HUD (placeholder)
 
-- **Skinny / Soft / Fat** — selecciona el cap (cono 4° / 12° / 25°).
-- **Distancia de boquilla** (slider) — LA mecánica: a más distancia, cono más ancho, borde
-  más suave y más overspray, en vivo (§4.1).
+- **Skinny / Soft / Fat** — cap (cono 4° / 12° / 25°).
+- **Distancia de boquilla** (slider) — LA mecánica: a más distancia, cono más ancho, borde más
+  suave y más overspray, en vivo (§4.1).
 - **Clear / Undo / Redo** y swatches de color.
-- Lectura arriba-izquierda: **FPS**, **latencia input→submit (ms)**, **drips activos** y
-  **stamps/frame**.
+- Lectura arriba-izquierda: **FPS**, **latencia input→submit (ms)**, **drips** y **stamps/frame**.
 
 ---
 
@@ -51,75 +76,59 @@ Al abrir por primera vez, si Unity pregunta por el backend de input, elige **Bot
 ### iOS
 1. `File ▸ Build Settings ▸ iOS ▸ Switch Platform`.
 2. Asegura la escena `SpraySpike` en la lista (el menú de setup ya la añade).
-3. `Build` → abre el proyecto Xcode → firma con tu equipo → *Run* en un iPhone/iPad.
-   iPad + Apple Pencil es la experiencia con presión real (presión → distancia de boquilla).
+3. `Build` → abre el proyecto Xcode → firma con tu equipo → *Run* en iPhone/iPad. iPad + Apple
+   Pencil da la presión real (presión → distancia de boquilla).
 
 ### Android
 1. `File ▸ Build Settings ▸ Android ▸ Switch Platform`.
 2. `Build And Run` con un dispositivo en modo desarrollador (o genera el APK).
 
-En dispositivo, el HUD muestra las métricas en tiempo real; para el número oficial usa el
-Profiler (abajo).
+---
+
+## Cómo medir las métricas (criterios §4.2)
+
+**Objetivo:** latencia input→píxel **< 30 ms** (ideal 16) y **60 fps** dibujando.
+
+- **FPS**: HUD (media + peor frame) y `Window ▸ Analysis ▸ Profiler` dibujando un trazo continuo.
+- **Latencia**: `LatencyProbe` mide input→submit del CommandBuffer (el tramo que controla el
+  motor). Para el end-to-end real, graba la pantalla a alta velocidad (240 fps) y cuenta frames.
+- **GC / allocs por trazo**: Profiler → columna *GC Alloc* en *Scripts*; debe ser 0 B/frame en
+  trazo sostenido (buffers preasignados + pools).
+
+Anota las cifras en `INFORME-GO-NOGO.md §3` (tabla lista para rellenar).
 
 ---
 
-## Cómo medir las métricas (criterios de aceptación §4.2)
-
-**Objetivo:** latencia input→píxel **< 30 ms** (ideal 16) y **60 fps** sostenidos dibujando.
-
-- **FPS**: el HUD muestra media y peor frame. Para la cifra sólida, `Window ▸ Analysis ▸
-  Profiler`, categoría *Rendering*/*Scripts*, dibujando un trazo continuo.
-- **Latencia**: `LatencyProbe` mide el tramo que controla el motor (input recibido → submit
-  del CommandBuffer a la GPU). **No** es la latencia motion-to-photon completa (falta muestreo
-  del SO + escaneo del panel). Para el número end-to-end real, graba la pantalla a alta
-  velocidad (240 fps) tocando y cuenta frames hasta que aparece el píxel.
-- **GC / allocs por trazo**: Profiler → *Memory* / columna *GC Alloc* en *Scripts*. Durante un
-  trazo sostenido, `SprayEmitter`/`GpuStamper`/pools no deben generar allocs (buffers
-  preasignados; ver ENG-03).
-
-Anota tus cifras en `INFORME-GO-NOGO.md` (tiene una tabla lista para rellenar).
-
----
-
-## Mapa del código (qué implementa qué)
+## Mapa del código
 
 ```
-Assets/_Project/
-  Core/                         PieceBook.Core
-    Events/EventBus.cs          pub/sub tipado, sin allocs (§3, §7)
-    Events/DrawingEvents.cs     StrokeStarted / StrokeCompleted / DripSpawned
-  DrawingEngine/                PieceBook.DrawingEngine  (API PURA, sin UI)
-    Api/IDrawingCanvas.cs       contrato EXACTO §4.3
-    Api/LayerId, StrokeConfig, StrokeRecording
-    Config/CapDef.cs            ScriptableObject (§9)
-    Config/PaintDef.cs          ScriptableObject con dripThreshold (§9)
-    Canvas/DrawingCanvas.cs     RenderTexture 2048², capas, undo ring, Flatten, recording  [ENG-01]
-    Stamping/GpuStamper.cs      CommandBuffer + DrawMeshInstanced (NUNCA SetPixels)         [ENG-01]
-    Stamping/SprayEmitter.cs    trazo→partículas; distancia→cono/borde/overspray            [ENG-02]
-    Shaders/SprayStamp.shader   dot instanciado con falloff suave
-    Interpolation/CatmullRom.cs suavizado del input                                          [ENG-03]
-    Pooling/ObjectPool.cs       pool prewarmed cero-alloc                                    [ENG-03]
-    Drips/DripSystem.cs         drips procedurales sobre dripThreshold                       [ENG-04]
-    Input/StrokeInputController pointer→UV por raycast; Pencil/touch/mouse
-    Diagnostics/FrameStats, LatencyProbe
-  Content/                      caps + paint (generados)
-  Spike/                        PieceBook.Spike  (harness; borrar en Fase 1)
-    SprayDemoBootstrap.cs       ensambla la escena en código
-    DemoHud.cs                  UI placeholder + lecturas de métricas
-    Editor/SpikeSetup.cs        menú TAG-School (assets + shader + escena)
-Tests/EditMode/                 pruebas de pooling, Catmull-Rom, accumulator, EventBus
+docs/ARQUITECTURA.md            fuente de verdad (§4 motor, §4.3 API, §8 estructura)
+INFORME-GO-NOGO.md              veredicto + métricas
+unity/
+  Assets/_Project/
+    Core/                       PieceBook.Core        EventBus tipado + eventos
+    DrawingEngine/              PieceBook.DrawingEngine (API PURA, sin UI)
+      Api/IDrawingCanvas.cs     contrato EXACTO §4.3
+      Config/CapDef, PaintDef   ScriptableObjects (§9)
+      Canvas/DrawingCanvas.cs   RT 2048², capas, undo, Flatten, recording   [ENG-01]
+      Stamping/GpuStamper.cs    CommandBuffer + DrawMeshInstanced            [ENG-01]
+      Stamping/SprayEmitter.cs  trazo→partículas; distancia→cono/borde/mist  [ENG-02]
+      Interpolation/CatmullRom  suavizado del input                          [ENG-03]
+      Pooling/ObjectPool.cs     pool prewarmed cero-alloc                    [ENG-03]
+      Drips/DripSystem.cs       drips procedurales                           [ENG-04]
+      Input/StrokeInputController  pointer→UV; Pencil/touch/mouse
+      Diagnostics/              FrameStats + LatencyProbe
+    Content/                    caps + paint (generados)
+    Spike/                      PieceBook.Spike (harness; borrar en Fase 1)
+  Tests/EditMode/               pooling, Catmull-Rom, accumulator, EventBus
 ```
 
 ## Limitaciones conocidas (spike, a propósito)
 
-- **Undo** = ring buffer de snapshots RT completos (N=8). Producción usa snapshots por tiles
-  comprimidos (§4.1); aquí prioriza simplicidad sobre memoria.
-- **Flatten** y display componen 1 capa (la activa). El compositing multicapa es Fase 1.
-- **URP**: el stamping va por CommandBuffer directo a la RT, así que es *pipeline-agnostic*
-  (funciona bajo URP o Built-in). Si tu proyecto no tiene un URP Asset asignado, la escena
-  igual corre; para forzar URP, crea/assigna un URP Asset en *Project Settings ▸ Graphics*.
+- **Undo** = ring buffer de snapshots RT completos (N=8); producción usa tiles comprimidos (§4.1).
+- **Flatten**/display componen 1 capa (la activa); multicapa es Fase 1.
+- **URP**: el stamping va por CommandBuffer directo a la RT → *pipeline-agnostic* (URP o
+  Built-in). Para forzar URP, crea/assigna un URP Asset en *Project Settings ▸ Graphics*.
 - Sin arte final: la pared es una textura de ladrillo generada por código.
 - Si en alguna plataforma el trazo sale espejado en vertical, invierte `pos.y` en
-  `StrokeInputController` (diferencia de origen UV de la RT).
-
-Ver el veredicto y las métricas en **`INFORME-GO-NOGO.md`**.
+  `StrokeInputController` (origen UV de la RT).
