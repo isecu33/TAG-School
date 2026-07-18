@@ -19,6 +19,9 @@ namespace PieceBook.CitySim.UI
         private Text _phase;
         private Text _prompt;
         private Text _alert;
+        private GameObject _outcome;
+        private Text _outcomeTitle;
+        private Image _outcomeBg;
 
         public void Init()
         {
@@ -45,6 +48,50 @@ namespace PieceBook.CitySim.UI
             rt.pivot = new Vector2(0.5f, 0f);
             rt.anchoredPosition = new Vector2(0, 40);
             rt.sizeDelta = new Vector2(900, 32);
+
+            BuildOutcome(root);
+        }
+
+        private void BuildOutcome(RectTransform root)
+        {
+            _outcomeBg = NewImage(root, "Outcome", new Color(0.03f, 0.03f, 0.05f, 0.9f));
+            var br = _outcomeBg.rectTransform;
+            br.anchorMin = Vector2.zero; br.anchorMax = Vector2.one; br.offsetMin = Vector2.zero; br.offsetMax = Vector2.zero;
+            _outcome = _outcomeBg.gameObject;
+
+            _outcomeTitle = Text(br, "OutcomeTitle", 56, TextAnchor.MiddleCenter);
+            var tr = _outcomeTitle.rectTransform;
+            tr.anchorMin = new Vector2(0.5f, 0.5f); tr.anchorMax = new Vector2(0.5f, 0.5f); tr.pivot = new Vector2(0.5f, 0.5f);
+            tr.anchoredPosition = new Vector2(0, 30); tr.sizeDelta = new Vector2(900, 100);
+
+            var sub = Text(br, "OutcomeSub", 22, TextAnchor.MiddleCenter);
+            var sr = sub.rectTransform;
+            sr.anchorMin = new Vector2(0.5f, 0.5f); sr.anchorMax = new Vector2(0.5f, 0.5f); sr.pivot = new Vector2(0.5f, 0.5f);
+            sr.anchoredPosition = new Vector2(0, -50); sr.sizeDelta = new Vector2(900, 40);
+            sub.text = "Pulsa Espacio para reintentar";
+
+            _outcome.transform.SetAsLastSibling();
+            _outcome.SetActive(false);
+        }
+
+        public void ShowOutcome(string title, Color color)
+        {
+            if (_outcome == null) return;
+            _outcomeTitle.text = title;
+            _outcomeTitle.color = color;
+            _outcome.transform.SetAsLastSibling();
+            _outcome.SetActive(true);
+        }
+
+        public void HideOutcome() { if (_outcome != null) _outcome.SetActive(false); }
+
+        private Image NewImage(RectTransform parent, string name, Color c)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            var img = go.AddComponent<Image>();
+            img.color = c;
+            return img;
         }
 
         public void SetPhase(LoopPhase phase) { if (_phase) _phase.text = "FASE: " + PhaseName(phase); }
