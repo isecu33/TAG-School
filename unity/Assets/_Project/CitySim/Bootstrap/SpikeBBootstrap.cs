@@ -1,4 +1,6 @@
+using PieceBook.CitySim.AI;
 using PieceBook.CitySim.Data;
+using PieceBook.CitySim.Graph;
 using PieceBook.CitySim.Loop;
 using PieceBook.CitySim.Player;
 using PieceBook.CitySim.UI;
@@ -49,6 +51,11 @@ namespace PieceBook.CitySim.Bootstrap
             var player = CreatePlayer();
             player.Init(camGo.transform);
 
+            // Street graph + shared zone blackboard + patrol
+            var graph = new StreetGraph(zone.streetNodes, zone.streetEdges);
+            var blackboard = new ZoneBlackboard(bus);
+            var patrol = CreatePatrol(graph, blackboard, bus, player);
+
             // HUD
             var hudGo = new GameObject("Hud");
             hudGo.transform.SetParent(transform, false);
@@ -59,7 +66,32 @@ namespace PieceBook.CitySim.Bootstrap
             var loopGo = new GameObject("Loop");
             loopGo.transform.SetParent(transform, false);
             var loop = loopGo.AddComponent<BombingLoopController>();
-            loop.Init(bus, input, player, rig, hud, zone, city);
+            loop.Init(bus, input, player, rig, hud, zone, city, patrol, blackboard);
+        }
+
+        private PatrolAgent CreatePatrol(StreetGraph graph, ZoneBlackboard blackboard,
+                                         EventBus bus, PlayerController player)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            go.name = "Patrol";
+            var primitiveCollider = go.GetComponent<Collider>();
+            if (primitiveCollider != null) DestroyImmediate(primitiveCollider);
+
+            var cc = go.AddComponent<CharacterController>();
+            cc.height = 2f;
+            cc.radius = 0.4f;
+            cc.center = new Vector3(0f, 1f, 0f);
+
+            go.GetComponent<MeshRenderer>().sharedMaterial =
+                MaterialFactory.Solid(new Color(0.2f, 0.35f, 0.8f));
+            go.transform.SetParent(transform, false);
+
+            var agent = go.AddComponent<PatrolAgent>();
+            var def = (zone.patrolRoutes != null && zone.patrolRoutes.Length > 0)
+                ? zone.patrolRoutes[0]
+                : CityLayout.BuildPatrol();
+            agent.Init(def, graph, blackboard, bus, player);
+            return agent;
         }
 
         private PlayerController CreatePlayer()
