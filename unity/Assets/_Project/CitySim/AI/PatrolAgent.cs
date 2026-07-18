@@ -81,6 +81,48 @@ namespace PieceBook.CitySim.AI
             _indicator.sharedMaterial = _indicatorMat;
         }
 
+        /// <summary>
+        /// Forward-simulates the Calm loop from the patrol's CURRENT position and returns the
+        /// seconds until its vision cone would first see <paramref name="target"/> (or
+        /// <paramref name="horizon"/> if never within it). This IS the painting window (point 3):
+        /// because it replays the real route/speed/cone with real LOS raycasts, the estimate
+        /// tracks the true cycle to within the sim step — well inside the ±20% criterion.
+        /// </summary>
+        public float TimeUntilVisible(Vector3 target, float horizon)
+        {
+            if (_route == null || _route.Count < 2) return horizon;
+
+            Vector3 pos = transform.position;
+            int idx = _routeIdx;
+            float pauseTimer = _pauseTimer;
+            Vector3 facing = transform.forward;
+            Vector3 targetEye = target + Vector3.up;
+            const float dt = 0.08f;
+
+            for (float t = 0f; t < horizon; t += dt)
+            {
+                Vector3 eye = pos + Vector3.up * 1.2f;
+                if (VisionSensor.CanSee(eye, facing, _def.visionCone, targetEye, false, out _))
+                    return t;
+
+                Vector3 node = _graph.Position(_route[idx]);
+                Vector3 to = node - pos; to.y = 0f;
+                float dist = to.magnitude;
+                if (dist < 0.3f)
+                {
+                    pauseTimer -= dt;
+                    if (pauseTimer <= 0f) { idx = (idx + 1) % _route.Count; pauseTimer = _def.waypointPause; }
+                }
+                else
+                {
+                    Vector3 dir = to / dist;
+                    facing = dir;
+                    pos += dir * _def.speed * dt;
+                }
+            }
+            return horizon;
+        }
+
         /// <summary>Total time for one full Calm loop of the route — used by the window (§ point 3).</summary>
         public float EstimateCycleSeconds()
         {
