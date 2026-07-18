@@ -33,6 +33,13 @@ namespace PieceBook.CitySim.AI
 
         public void ClearLastKnown() => HasLastKnownPlayerPos = false;
 
+        public void Reset()
+        {
+            _heat = 0f;
+            _lastPublished = -1f;
+            HasLastKnownPlayerPos = false;
+        }
+
         public void RaiseHeat(float amount)
         {
             SetHeat(Mathf.Clamp01(_heat + amount));
