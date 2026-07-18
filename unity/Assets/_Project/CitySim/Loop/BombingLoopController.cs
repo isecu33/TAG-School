@@ -1,6 +1,7 @@
 using PieceBook.CitySim.AI;
 using PieceBook.CitySim.Data;
 using PieceBook.CitySim.Events;
+using PieceBook.CitySim.Paint;
 using PieceBook.CitySim.Player;
 using PieceBook.CitySim.UI;
 using PieceBook.CitySim.World;
@@ -31,9 +32,13 @@ namespace PieceBook.CitySim.Loop
         private ZoneBlackboard _blackboard;
 
         private WindowRing _ring;
+        private FirstPersonPaint _fp;
         private readonly PaintingWindow _window = new PaintingWindow();
         private SurfaceMarker _windowSurface;
         private float _windowTimer;
+
+        private const float ExploreOrtho = 7.5f;
+        private const float PaintOrtho = 4f;
 
         private LoopPhase _phase = LoopPhase.Explore;
         private SurfaceMarker _nearSurface;
@@ -58,6 +63,11 @@ namespace PieceBook.CitySim.Loop
             var ringGo = new GameObject("WindowRing");
             ringGo.transform.SetParent(transform, false);
             _ring = ringGo.AddComponent<WindowRing>();
+
+            var fpGo = new GameObject("FirstPersonPaint");
+            fpGo.transform.SetParent(transform, false);
+            _fp = fpGo.AddComponent<FirstPersonPaint>();
+            _fp.Init(_input);
         }
 
         private void Update()
@@ -69,6 +79,7 @@ namespace PieceBook.CitySim.Loop
             switch (_phase)
             {
                 case LoopPhase.Explore: TickExplore(dt); break;
+                case LoopPhase.Painting: TickPainting(dt); break;
                 case LoopPhase.Chase: TickChase(dt); break;
             }
 
@@ -127,8 +138,47 @@ namespace PieceBook.CitySim.Loop
                 EnterPhase(LoopPhase.Explore);
         }
 
-        // Filled in point 4 (first-person painting).
-        private void StartPainting(SurfaceMarker surface) { }
+        private void StartPainting(SurfaceMarker surface)
+        {
+            // Stand at the wall, freeze world control, zoom in and open the FP canvas.
+            _player.Teleport(surface.PaintStand + Vector3.up);
+            _player.transform.rotation = Quaternion.LookRotation(
+                new Vector3(surface.Def.facing.x, 0f, surface.Def.facing.y));
+            _player.ControlEnabled = false;
+            _window.Bind(_patrol, surface.transform.position);
+            _ring.Hide();
+            _camera.OrthoSize = PaintOrtho;
+            _fp.Enter(_window);
+            EnterPhase(LoopPhase.Painting);
+        }
+
+        private void TickPainting(float dt)
+        {
+            _fp.Tick(dt);
+            _hud.SetPrompt(_fp.GlanceActive ? "Vistazo a la calle…" : "Pintando — vigila la ventana");
+
+            // Busted mid-piece: the patrol's cone found you at the wall.
+            if (_patrol != null && _patrol.IsChasing)
+            {
+                EndPainting();
+                EnterPhase(LoopPhase.Chase);
+                return;
+            }
+            // Piece finished: clean, back to the street.
+            if (_fp.Finished)
+            {
+                EndPainting();
+                _hud.SetPrompt("Pieza terminada — clean getaway");
+                EnterPhase(LoopPhase.Explore);
+            }
+        }
+
+        private void EndPainting()
+        {
+            _fp.Exit();
+            _player.ControlEnabled = true;
+            _camera.OrthoSize = ExploreOrtho;
+        }
 
         private void EnterPhase(LoopPhase next)
         {
