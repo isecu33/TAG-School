@@ -30,6 +30,11 @@ namespace PieceBook.CitySim.Loop
         private PatrolAgent _patrol;
         private ZoneBlackboard _blackboard;
 
+        private WindowRing _ring;
+        private readonly PaintingWindow _window = new PaintingWindow();
+        private SurfaceMarker _windowSurface;
+        private float _windowTimer;
+
         private LoopPhase _phase = LoopPhase.Explore;
         private SurfaceMarker _nearSurface;
 
@@ -49,6 +54,10 @@ namespace PieceBook.CitySim.Loop
             _patrol = patrol;
             _blackboard = blackboard;
             _camera.Follow(_player.transform);
+
+            var ringGo = new GameObject("WindowRing");
+            ringGo.transform.SetParent(transform, false);
+            _ring = ringGo.AddComponent<WindowRing>();
         }
 
         private void Update()
@@ -73,9 +82,11 @@ namespace PieceBook.CitySim.Loop
             _player.Drive(_input.Move, WalkSpeed);
 
             _nearSurface = FindNearestSurface(PaintRange);
+            UpdateWindow(dt);
+
             _hud.SetPrompt(_nearSurface != null
-                ? "Muro a tiro — pulsa Espacio para pintar"
-                : "Explora El Polígono: acércate a un muro pintable");
+                ? $"Ventana ≈ {_window.Remaining:0.0}s — pulsa Espacio para pintar"
+                : "Explora El Polígono: acércate a un muro pintable (observa a la patrulla)");
 
             if (_nearSurface != null && _input.InteractPressed)
                 StartPainting(_nearSurface);
@@ -84,9 +95,32 @@ namespace PieceBook.CitySim.Loop
                 EnterPhase(LoopPhase.Chase);
         }
 
-        // Minimal chase for point 2 (run + camera). Hide + Caught/Escaped land in point 5.
+        /// <summary>Live window estimate + ring while observing a surface (point 3).</summary>
+        private void UpdateWindow(float dt)
+        {
+            if (_nearSurface == null)
+            {
+                if (_ring != null) _ring.Hide();
+                _windowSurface = null;
+                return;
+            }
+            if (_nearSurface != _windowSurface)
+            {
+                _windowSurface = _nearSurface;
+                _window.Bind(_patrol, _nearSurface.transform.position);
+                _windowTimer = 0f;
+            }
+            _windowTimer -= dt;
+            if (_windowTimer <= 0f) { _windowTimer = 0.2f; _window.LiveEstimate(); }
+
+            _ring.Show(_nearSurface.RingAnchor.position + Vector3.up * 1.4f);
+            _ring.SetFraction(_window.Fraction, PaintingWindow.Urgency(_window.Fraction));
+        }
+
+        // Minimal chase for point 2/3 (run + camera). Hide + Caught/Escaped land in point 5.
         private void TickChase(float dt)
         {
+            if (_ring != null) _ring.Hide();
             _player.Drive(_input.Move, RunSpeed);
             _hud.SetPrompt("¡Te han visto! Corre y rompe la línea de visión");
             if (_patrol != null && !_patrol.IsChasing)
