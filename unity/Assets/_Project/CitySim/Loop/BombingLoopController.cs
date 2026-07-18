@@ -20,6 +20,8 @@ namespace PieceBook.CitySim.Loop
         private const float PaintRange = 1.7f;
         private const float WalkSpeed = 3.2f;
         private const float RunSpeed = 4.4f;
+        private const float HideRange = 1.6f;
+        private const float CatchRange = 1.2f;
 
         private EventBus _bus;
         private InputReader _input;
@@ -81,6 +83,8 @@ namespace PieceBook.CitySim.Loop
                 case LoopPhase.Explore: TickExplore(dt); break;
                 case LoopPhase.Painting: TickPainting(dt); break;
                 case LoopPhase.Chase: TickChase(dt); break;
+                case LoopPhase.Caught:
+                case LoopPhase.Escaped: TickOutcome(dt); break;
             }
 
             _hud.SetPhase(_phase);
@@ -128,14 +132,70 @@ namespace PieceBook.CitySim.Loop
             _ring.SetFraction(_window.Fraction, PaintingWindow.Urgency(_window.Fraction));
         }
 
-        // Minimal chase for point 2/3 (run + camera). Hide + Caught/Escaped land in point 5.
         private void TickChase(float dt)
         {
             if (_ring != null) _ring.Hide();
-            _player.Drive(_input.Move, RunSpeed);
-            _hud.SetPrompt("¡Te han visto! Corre y rompe la línea de visión");
-            if (_patrol != null && !_patrol.IsChasing)
-                EnterPhase(LoopPhase.Explore);
+
+            // Hide in a nearby container by holding (GD-02 §3).
+            var container = FindNearestContainer(HideRange);
+            bool wantHide = _input.HideHeld && container != null;
+            _player.SetHidden(wantHide, container != null ? container.transform.position : _player.transform.position);
+            if (!wantHide) _player.Drive(_input.Move, RunSpeed);
+
+            _hud.SetPrompt(container != null
+                ? "Contenedor cerca — MANTÉN Shift/H para esconderte"
+                : "¡Corre! Rompe la línea de visión (esquina/edificio) y busca un contenedor");
+
+            // Caught: the patrol closes to arm's reach while it can still see you.
+            float dist = Vector3.Distance(_player.transform.position, _patrol.Position);
+            if (dist < CatchRange && !_player.IsHidden)
+            {
+                Outcome(true);
+                return;
+            }
+            // Escaped: the patrol lost you and dropped out of Persecución.
+            if (!_patrol.IsChasing)
+                Outcome(false);
+        }
+
+        private void Outcome(bool caught)
+        {
+            _player.ControlEnabled = false;
+            EnterPhase(caught ? LoopPhase.Caught : LoopPhase.Escaped);
+            if (caught) _hud.ShowOutcome("PILLADO", new Color(1f, 0.4f, 0.4f));
+            else _hud.ShowOutcome("ESCAPADO", new Color(0.5f, 1f, 0.6f));
+        }
+
+        private void TickOutcome(float dt)
+        {
+            if (_input.InteractPressed) Restart();
+        }
+
+        private void Restart()
+        {
+            _hud.HideOutcome();
+            _player.SetHidden(false, _player.transform.position);
+            _player.ControlEnabled = true;
+            _player.Teleport(_zone.NodeToWorld(3) + Vector3.up);
+            _patrol.ResetToStart();
+            _blackboard.Reset();
+            _camera.OrthoSize = ExploreOrtho;
+            EnterPhase(LoopPhase.Explore);
+        }
+
+        private World.ContainerMarker FindNearestContainer(float range)
+        {
+            World.ContainerMarker best = null;
+            float bestSqr = range * range;
+            Vector3 p = _player.transform.position;
+            for (int i = 0; i < _city.Containers.Count; i++)
+            {
+                var c = _city.Containers[i];
+                Vector3 d = c.transform.position - p; d.y = 0f;
+                float sq = d.sqrMagnitude;
+                if (sq < bestSqr) { bestSqr = sq; best = c; }
+            }
+            return best;
         }
 
         private void StartPainting(SurfaceMarker surface)

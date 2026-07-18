@@ -81,6 +81,18 @@ namespace PieceBook.CitySim.AI
             _indicator.sharedMaterial = _indicatorMat;
         }
 
+        /// <summary>Reset to a calm patrol at the route start (used on session restart).</summary>
+        public void ResetToStart()
+        {
+            _state = PatrolState.Calm;
+            _suspicion = 0f;
+            _searchTimer = 0f;
+            _routeIdx = 0;
+            _pauseTimer = _def.waypointPause;
+            if (_route != null && _route.Count > 0)
+                transform.position = _graph.Position(_route[0]) + Vector3.up;
+        }
+
         /// <summary>
         /// Forward-simulates the Calm loop from the patrol's CURRENT position and returns the
         /// seconds until its vision cone would first see <paramref name="target"/> (or
