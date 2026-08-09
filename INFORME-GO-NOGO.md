@@ -3,6 +3,8 @@
 **Proyecto:** TAG-School (PIECEBOOK) · **Autor:** BLUEPRINT · **Fecha:** 2026-07-18
 **Alcance:** validar latencia y feel del spray del motor de pintura. Criterios §4.2:
 latencia input→píxel **< 30 ms** (ideal 16) y **60 fps** sostenidos dibujando.
+**Proyecto Unity:** [`/unity`](unity) (2022 LTS · URP). **Fuente de verdad:**
+[`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md). Rutas de código: `unity/Assets/_Project/…`.
 
 ---
 
