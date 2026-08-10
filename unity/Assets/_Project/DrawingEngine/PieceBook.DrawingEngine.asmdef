@@ -1,0 +1,17 @@
+{
+    "name": "PieceBook.DrawingEngine",
+    "rootNamespace": "PieceBook.DrawingEngine",
+    "references": [
+        "PieceBook.Core",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
