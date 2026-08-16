@@ -6,7 +6,7 @@ namespace PieceBook.DrawingEngine.Pooling
     /// <summary>
     /// Prewarmed, allocation-free object pool (ARQUITECTURA §7 "Flyweight + Object Pool:
     /// cero allocs durante un trazo"). Used for drips (spray stamps use flat struct
-    /// buffers instead — see <see cref="Stamping.StampBatch"/>).
+    /// buffers instead).
     ///
     /// As long as the pool is prewarmed to the peak concurrent count, Get()/Return()
     /// never allocate: Stack&lt;T&gt; only grows when Push exceeds capacity, and we pre-size it.
