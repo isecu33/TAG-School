@@ -1,5 +1,5 @@
 # PIECEBOOK — Arquitectura Técnica
-**Autor:** BLUEPRINT (Arquitecto) · **Versión:** 1.0 · **Estado:** Fuente de verdad técnica
+**Autor:** BLUEPRINT (Arquitecto) · **Versión:** 1.1 · **Estado:** Fuente de verdad técnica
 
 ---
 
@@ -143,6 +143,8 @@ Puntuación → 1-3 "coronas". Post-MVP: clasificador ligero on-device (Sentis/C
 | **ScriptableObject como catálogo** | Caps, pinturas, alfabetos, lecciones, paletas. Diseño añade contenido sin código. |
 | **Service Locator ligero (o VContainer)** | Servicios core (Save, Audio, Haptics, Analytics). Preferencia: **VContainer** (DI real, testeable). |
 | **Repository** | Acceso a SQLite/Firestore tras interfaz única (`IProgressRepo`), permite offline-first con sync diferido. |
+| **FSM por agente (Calma→Sospecha→Persecución)** | IA de patrullas de CitySim: waypoints + cono de visión. Sin navmesh 3D: navegación por grafo de calles 2D. |
+| **Blackboard ligero** | Estado compartido de alerta por zona (nivel de "calor") que leen todas las patrullas de esa zona. |
 
 **Antipatrones prohibidos:** Singletons dispersos, `Update()` polling para lógica de eventos, lógica en Views, strings mágicos (usar constantes generadas de los catálogos).
 
@@ -159,6 +161,7 @@ Assets/
     ARModule/        (asmdef) solo se referencia por Addressables
     Social/          (asmdef) export, share, replay-to-mp4
     MetaGame/        (asmdef) progresión, blackbook, tienda de desbloqueos
+    CitySim/         (asmdef) mapa isométrico, zonas, patrullas (FSM+waypoints), persecución, modo dron
     UI/              (asmdef) MVP presenters + views
     Content/         ScriptableObjects: caps, paints, alphabets, lessons, palettes
   Art/  Audio/  AddressableGroups/
@@ -177,16 +180,22 @@ AlphabetDef   {id, style (handstyle|blockbuster|bubble|semi-wild|wildstyle),
                letters[26] → {templatePath, strokeOrder[], difficulty}}
 LessonDef     {id, chapter, steps[], unlocks[], glossaryRefs[]}
 GlossaryEntry {id, term, definition, era, media?, relatedTerms[]}
-Artwork       {id, layers[], strokeRecording, wallContext, createdAt, sharedUrl?}
-Progress      {lessonId → crowns, unlockedItems[], streak, blackbookPages[]}
+Artwork       {id, layers[], strokeRecording, wallContext, createdAt, sharedUrl?,
+               state (finished|in_progress|buffed), surfaceId?}
+Progress      {lessonId → crowns, unlockedItems[], streak, blackbookPages[], fame, chapas}
+ZoneDef       {id, name, surveillance (1-5), fameMultiplier, dayNightProfile,
+               patrolRoutes[], hideSpots[], unlockFame}
+SurfaceDef    {id, zoneId, size, texture, isSafeWall (spot ganado), position}
+PatrolDef     {id, waypoints[], speed, visionCone {angle, range}, alertProfile}
 ```
+Los datos de GD-02 (ventana de pintado, confiscación, multas) se derivan de `ZoneDef` + `PatrolDef` en runtime; no se persisten salvo el estado de `Artwork`.
 
 ---
 
 ## 10. Seguridad, privacidad y tiendas
 - Cuenta opcional (anónima por defecto, link a Apple/Google después). Nada de datos de menores: age gate + analytics reducida bajo 16.
 - Contenido compartido pasa moderación básica (Cloud Function + hash de imágenes reportadas) antes de galerías públicas (post-MVP; en MVP solo se comparte HACIA fuera, no hay galería interna).
-- Posicionamiento en tiendas: juego educativo/creativo; los muros del juego son espacios legales — importante para review de Apple.
+- Posicionamiento en tiendas: juego creativo/educativo con sigilo arcade en ciudad **ficticia** y tono cómic/slapstick (GD-02). Rating objetivo **12+** (travesura caricaturesca, como cualquier juego de sigilo). Los "muros seguros" mantienen el ángulo educativo; el juego no da instrucciones del mundo real.
 
 ---
 
@@ -194,11 +203,14 @@ Progress      {lessonId → crowns, unlockedItems[], streak, blackbookPages[]}
 
 | Fase | Semanas | Entregable |
 |---|---|---|
-| **0. Spike** | 1-2 | Prototipo brush engine: latencia y feel del spray validados en dispositivo real. GO/NO-GO. |
-| **1. Vertical slice** | 3-8 | Cap. 1 completo (5 lecciones de tag), 3 caps, 1 alfabeto handstyle, save local, sonido+haptics. |
-| **2. MVP** | 9-16 | 3 capítulos (tag→throw-up→color), glosario, blackbook, export imagen+vídeo, share nativo, mockups de pared (sin RA). |
-| **3. RA + Social** | 17-22 | Plasmado RA de obras terminadas, replay MP4, Firebase sync, soft launch. |
-| **4. Post-launch** | 23+ | Wildstyle, pieces multicapa, RA paint-over, galería comunitaria, eventos ("jams"). |
+| **0. Spike A** | 1-2 | Prototipo brush engine: latencia y feel del spray en dispositivo real. GO/NO-GO. |
+| **0b. Spike B** | 2-3 | Prototipo del loop de bombing (GD-02) en gris: 1 zona, 1 patrulla FSM, ventana, transición 1ª persona. Validar que la tensión divierte. GO/NO-GO del sandbox de riesgo. |
+| **1. Vertical slice** | 4-9 | Cap. 1 completo (5 lecciones EL BOTE) + mapa de El Polígono con 8 superficies, loop de bombing básico (vigilancia 1, confiscación simple), avatar base, save local, sonido+haptics. |
+| **2. MVP** | 10-18 | 3 capítulos (tag→throw-up→color), zonas 1-3 con patrullas, persecución + escondites (contenedores), glosario, blackbook, avatar con tienda, modo foto simple, export imagen+vídeo, share nativo. |
+| **3. RA + Social + Cine** | 19-25 | Plasmado RA de obras, modo dron con recorridos spline (MP4), replay, Firebase sync, soft launch. |
+| **4. Post-launch** | 26+ | Zonas 4-5 (Milla de Oro), chivatos civiles, trucos de barrio, ciclo día/noche completo, wildstyle, RA paint-over, galería comunitaria, jams. |
+
+Regla de fases: si el Spike B no divierte, el sandbox de riesgo se recorta a "retos de tiempo" sin persecución y el roadmap vuelve a la v1.0 — la parte educativa nunca depende del sigilo.
 
 ---
 
