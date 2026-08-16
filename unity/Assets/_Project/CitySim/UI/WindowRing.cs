@@ -32,11 +32,17 @@ namespace PieceBook.CitySim.UI
         public void Show(Vector3 worldPos)
         {
             transform.position = worldPos;
-            transform.rotation = Quaternion.identity; // horizontal ring (readable from iso)
             gameObject.SetActive(true);
         }
 
         public void Hide() => gameObject.SetActive(false);
+
+        // Billboard to the camera so the ring reads as a full circle (not a thin ellipse) in iso.
+        private void LateUpdate()
+        {
+            var cam = Camera.main;
+            if (cam != null) transform.rotation = cam.transform.rotation;
+        }
 
         public void SetFraction(float fraction, Color color)
         {
@@ -46,7 +52,7 @@ namespace PieceBook.CitySim.UI
             for (int i = 0; i < n; i++)
             {
                 float a = (i / (float)MaxSegments) * Mathf.PI * 2f;
-                _lr.SetPosition(i, new Vector3(Mathf.Cos(a) * Radius, 0f, Mathf.Sin(a) * Radius));
+                _lr.SetPosition(i, new Vector3(Mathf.Cos(a) * Radius, Mathf.Sin(a) * Radius, 0f));
             }
             _lr.startColor = color;
             _lr.endColor = color;

@@ -53,7 +53,7 @@ namespace PieceBook.CitySim.AI
             if (forward.sqrMagnitude < 1e-4f) forward = Vector3.forward;
             forward.Normalize();
 
-            Vector3 basePos = new Vector3(eye.x, 0.05f, eye.z);
+            Vector3 basePos = new Vector3(eye.x, 0.08f, eye.z); // above road strips to avoid z-fighting
             Vector3 rayOrigin = new Vector3(eye.x, 0.3f, eye.z);
             _verts[0] = basePos;
 

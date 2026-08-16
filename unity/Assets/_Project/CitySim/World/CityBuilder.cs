@@ -33,6 +33,7 @@ namespace PieceBook.CitySim.World
             var roadMat = MaterialFactory.Solid(new Color(0.28f, 0.28f, 0.32f));
             var buildingMat = MaterialFactory.Solid(new Color(0.42f, 0.42f, 0.46f));
             var surfaceMat = MaterialFactory.Solid(new Color(0.62f, 0.60f, 0.55f));
+            MaterialFactory.SetEmission(surfaceMat, new Color(0.16f, 0.14f, 0.06f)); // reads as a "target"
             var containerMat = MaterialFactory.Solid(new Color(0.30f, 0.45f, 0.35f));
 
             // Ground
