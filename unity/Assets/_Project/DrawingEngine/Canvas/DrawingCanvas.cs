@@ -85,6 +85,16 @@ namespace PieceBook.DrawingEngine
             _quad = QuadMeshFactory.Create();
 
             if (stampShader == null) stampShader = Shader.Find("PieceBook/SprayStamp");
+            if (stampShader == null)
+            {
+                // Fail soft instead of throwing in GpuStamper: a fresh player build that never
+                // ran the setup menu won't have the shader in Always-Included.
+                Debug.LogError("[DrawingCanvas] Shader 'PieceBook/SprayStamp' not found. Run " +
+                    "'TAG-School ▸ Setup Phase 0 Spike' (adds it to Always-Included) or assign it " +
+                    "on this component. Painting is disabled.");
+                enabled = false;
+                return;
+            }
             _stamper = new GpuStamper(_quad, stampShader);
             _emitter = new SprayEmitter();
             _drips = new DripSystem(_bus, dripAccumResolution, prewarm: 64);
@@ -110,6 +120,7 @@ namespace PieceBook.DrawingEngine
 
         public void BeginStroke(StrokeConfig cfg)
         {
+            if (_stamper == null) return; // shader missing → painting disabled (see Awake)
             if (_drawing) FinalizeStroke();
 
             _cfg = cfg;
