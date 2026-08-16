@@ -5,7 +5,8 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "PieceBook.Core",
-        "PieceBook.DrawingEngine"
+        "PieceBook.DrawingEngine",
+        "PieceBook.CitySim"
     ],
     "includePlatforms": [
         "Editor"
