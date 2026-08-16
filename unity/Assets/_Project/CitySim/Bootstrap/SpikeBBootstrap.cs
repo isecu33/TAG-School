@@ -36,7 +36,7 @@ namespace PieceBook.CitySim.Bootstrap
             var rig = camGo.AddComponent<IsoCameraRig>();
             camGo.tag = "MainCamera";
 
-            // Directional light so the lit gray blockout reads
+            // Directional key light so the lit gray blockout reads
             var lightGo = new GameObject("Sun");
             lightGo.transform.SetParent(transform, false);
             var light = lightGo.AddComponent<Light>();
@@ -44,8 +44,24 @@ namespace PieceBook.CitySim.Bootstrap
             light.intensity = 1.15f;
             lightGo.transform.rotation = Quaternion.Euler(50f, -35f, 0f);
 
+            // Soft fill from the opposite side so back faces of gray cubes don't go near-black.
+            var fillGo = new GameObject("Fill");
+            fillGo.transform.SetParent(transform, false);
+            var fill = fillGo.AddComponent<Light>();
+            fill.type = LightType.Directional;
+            fill.intensity = 0.35f;
+            fillGo.transform.rotation = Quaternion.Euler(35f, 150f, 0f);
+
+            // Flat ambient so nothing bottoms out to black (no committed lighting settings).
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+            RenderSettings.ambientLight = new Color(0.28f, 0.28f, 0.32f);
+
             // City blockout
             var city = CityBuilder.Build(zone, transform);
+
+            // Scene-view debug: street graph, waypoints, surface facing, vision range.
+            var gizmos = gameObject.AddComponent<CitySimGizmos>();
+            gizmos.zone = zone;
 
             // Player
             var player = CreatePlayer();
@@ -75,12 +91,12 @@ namespace PieceBook.CitySim.Bootstrap
             var go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             go.name = "Patrol";
             var primitiveCollider = go.GetComponent<Collider>();
-            if (primitiveCollider != null) DestroyImmediate(primitiveCollider);
+            if (primitiveCollider != null) Destroy(primitiveCollider);
 
             var cc = go.AddComponent<CharacterController>();
             cc.height = 2f;
             cc.radius = 0.4f;
-            cc.center = new Vector3(0f, 1f, 0f);
+            cc.center = Vector3.zero; // capsule mesh is centered on its pivot (-1..+1); match it
 
             go.GetComponent<MeshRenderer>().sharedMaterial =
                 MaterialFactory.Solid(new Color(0.2f, 0.35f, 0.8f));
@@ -99,12 +115,12 @@ namespace PieceBook.CitySim.Bootstrap
             var go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             go.name = "Player";
             var primitiveCollider = go.GetComponent<Collider>();
-            if (primitiveCollider != null) DestroyImmediate(primitiveCollider); // CharacterController owns collision
+            if (primitiveCollider != null) Destroy(primitiveCollider); // CharacterController owns collision
 
             var cc = go.AddComponent<CharacterController>();
             cc.height = 2f;
             cc.radius = 0.4f;
-            cc.center = new Vector3(0f, 1f, 0f);
+            cc.center = Vector3.zero; // capsule mesh is centered on its pivot (-1..+1); match it
 
             go.GetComponent<MeshRenderer>().sharedMaterial =
                 MaterialFactory.Solid(new Color(0.9f, 0.75f, 0.2f));
