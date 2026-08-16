@@ -1,0 +1,59 @@
+name: Unity EditMode Tests
+
+# Cheap PR guardrail for the agent-built codebase (ARQUITECTURA §12): run the
+# EditMode suite on every PR / push that touches the Unity project.
+#
+# Requires a Unity license secret to be configured in the repo/org:
+#   Settings ▸ Secrets ▸ Actions ▸ UNITY_LICENSE  (see game.ci/docs for activation).
+# Without it the job will skip activation and fail — that is expected until the
+# maintainer adds the secret.
+
+on:
+  pull_request:
+    paths:
+      - 'unity/**'
+      - '.github/workflows/unity-editmode-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'unity/**'
+
+concurrency:
+  group: editmode-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  editmode:
+    name: EditMode
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Library
+        uses: actions/cache@v4
+        with:
+          path: unity/Library
+          key: Library-${{ hashFiles('unity/Assets/**', 'unity/Packages/**', 'unity/ProjectSettings/**') }}
+          restore-keys: |
+            Library-
+
+      - name: Run EditMode tests
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: unity
+          testMode: editmode
+          artifactsPath: test-results
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: EditMode-results
+          path: test-results
