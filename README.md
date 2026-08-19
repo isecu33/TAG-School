@@ -13,6 +13,10 @@ Juego iOS/Android que enseña graffiti real. Este repositorio arranca por la **F
 Alcance Fase 0: solo el Drawing Engine (ENG-01…ENG-04). **No** incluye lecciones, RA, backend
 ni arte final.
 
+- **Planes de las fases siguientes:** [`docs/planes/`](docs/planes/) descompone las Fases 1-4 del
+  roadmap (`ARQUITECTURA §11`) en tareas codificadas y verificables. La forma de delegarlas está
+  en [`docs/GUIA-AGENTES.md`](docs/GUIA-AGENTES.md) (regla de oro de §12).
+
 ---
 
 ## Checklist Fase 0 (ENG-01 → ENG-04)
