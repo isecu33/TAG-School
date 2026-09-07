@@ -26,7 +26,10 @@ namespace PieceBook.UI.App
 
         private void Awake()
         {
-            Bus = new EventBus();
+            // Use the shared default bus so the DrawingCanvas (which publishes stroke events on
+            // EventBus.Default) and the Core services talk over the same bus with no extra wiring.
+            // Tests inject their own bus instead; this is the one pragmatic shared instance (§7).
+            Bus = EventBus.Default;
 
             var audioBackend = gameObject.AddComponent<UnityAudioBackend>();
             if (audioCatalog != null) audioBackend.Configure(audioCatalog);
