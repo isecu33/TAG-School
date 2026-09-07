@@ -6,7 +6,8 @@
         "UnityEditor.TestRunner",
         "PieceBook.Core",
         "PieceBook.DrawingEngine",
-        "PieceBook.Lessons"
+        "PieceBook.Lessons",
+        "PieceBook.MetaGame"
     ],
     "includePlatforms": [
         "Editor"
