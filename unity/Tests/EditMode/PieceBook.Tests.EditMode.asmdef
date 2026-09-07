@@ -7,7 +7,8 @@
         "PieceBook.Core",
         "PieceBook.DrawingEngine",
         "PieceBook.Lessons",
-        "PieceBook.MetaGame"
+        "PieceBook.MetaGame",
+        "PieceBook.UI"
     ],
     "includePlatforms": [
         "Editor"
