@@ -72,23 +72,35 @@ namespace PieceBook.Spike.Editor
             return instance;
         }
 
+        private static readonly string[] RequiredShaders =
+        {
+            "PieceBook/SprayStamp",      // ENG-01 GPU stamping
+            "PieceBook/LayerComposite",  // ENG-05 multilayer flatten/display
+        };
+
         private static void EnsureShaderIncluded()
         {
-            var shader = Shader.Find("PieceBook/SprayStamp");
-            if (shader == null)
-            {
-                Debug.LogWarning("[SpikeSetup] PieceBook/SprayStamp not found; skipping Always-Included registration.");
-                return;
-            }
-
             var so = new SerializedObject(GraphicsSettings.GetGraphicsSettings());
             var arr = so.FindProperty("m_AlwaysIncludedShaders");
-            for (int i = 0; i < arr.arraySize; i++)
-                if (arr.GetArrayElementAtIndex(i).objectReferenceValue == shader) return;
 
-            int idx = arr.arraySize;
-            arr.InsertArrayElementAtIndex(idx);
-            arr.GetArrayElementAtIndex(idx).objectReferenceValue = shader;
+            foreach (var name in RequiredShaders)
+            {
+                var shader = Shader.Find(name);
+                if (shader == null)
+                {
+                    Debug.LogWarning($"[SpikeSetup] {name} not found; skipping Always-Included registration.");
+                    continue;
+                }
+
+                bool present = false;
+                for (int i = 0; i < arr.arraySize; i++)
+                    if (arr.GetArrayElementAtIndex(i).objectReferenceValue == shader) { present = true; break; }
+                if (present) continue;
+
+                int idx = arr.arraySize;
+                arr.InsertArrayElementAtIndex(idx);
+                arr.GetArrayElementAtIndex(idx).objectReferenceValue = shader;
+            }
             so.ApplyModifiedProperties();
         }
 

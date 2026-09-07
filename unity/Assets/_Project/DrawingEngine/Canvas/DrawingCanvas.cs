@@ -36,13 +36,26 @@ namespace PieceBook.DrawingEngine
         [Header("Drips (ENG-04)")]
         [SerializeField] private int dripAccumResolution = 96;
 
+        [Header("Undo tiles (ENG-06, §4.1)")]
+        [Tooltip("Grid resolution for tile-based undo dirty tracking (tiles per side).")]
+        [SerializeField] private int undoTilesPerSide = 16;
+
         // --- runtime state ---
         private readonly List<RenderTexture> _layers = new List<RenderTexture>(8);
+        private readonly List<bool> _visible = new List<bool>(8);
         private int _activeLayer;
+
+        // Multilayer compositing (ENG-05, §4.1).
+        [SerializeField] private Shader compositeShader;
+        private Material _compositeMat;
+        private RenderTexture _composite;
+        private bool _compositeDirty = true;
 
         private Mesh _quad;
         private GpuStamper _stamper;
-        private SprayEmitter _emitter;
+        private SprayEmitter _spray;
+        private MarkerEmitter _marker;
+        private IStampStrategy _emitter;   // active tool strategy (§7), swapped per stroke
         private DripSystem _drips;
 
         private readonly List<StrokeSample> _pending = new List<StrokeSample>(512);
@@ -53,6 +66,10 @@ namespace PieceBook.DrawingEngine
         private bool _endPending;
         private StrokeConfig _cfg;
         private float _strokeStartTime;
+
+        // Tile dirty tracking — the foundation of tile-based undo (ENG-06, §4.1). The GPU
+        // copy-on-write of dirty tiles builds on these indices; validated in-editor.
+        private TileDirtyTracker _tiles;
 
         // undo / redo snapshot pools
         private readonly List<RenderTexture> _undo = new List<RenderTexture>(16);
@@ -71,11 +88,20 @@ namespace PieceBook.DrawingEngine
         public int LayerCount => _layers.Count;
         public bool IsDrawing => _drawing;
 
+        /// <summary>Tiles touched by the current/last stroke (ENG-06 diagnostics).</summary>
+        public int DirtyTilesThisStroke => _tiles != null ? _tiles.DirtyTiles.Count : 0;
+
         /// <summary>Nozzle distance 0 (on the wall) .. 1 (far). The teaching dial (§4.1).</summary>
         [Range(0f, 1f)] public float NozzleDistance = 0.25f;
 
-        /// <summary>Texture the wall renders. Spike shows the active layer directly.</summary>
-        public Texture DisplayTexture => ActiveRT;
+        /// <summary>
+        /// Texture the wall renders: the full composited layer stack (ENG-05, §4.1). Refreshed
+        /// lazily — only when a layer, its visibility, or the history changed since last read.
+        /// </summary>
+        public Texture DisplayTexture
+        {
+            get { if (_compositeDirty) RefreshComposite(); return _composite; }
+        }
 
         private RenderTexture ActiveRT => _layers[_activeLayer];
 
@@ -86,12 +112,21 @@ namespace PieceBook.DrawingEngine
 
             if (stampShader == null) stampShader = Shader.Find("PieceBook/SprayStamp");
             _stamper = new GpuStamper(_quad, stampShader);
-            _emitter = new SprayEmitter();
+            _spray = new SprayEmitter();
+            _marker = new MarkerEmitter();
+            _emitter = _spray;
             _drips = new DripSystem(_bus, dripAccumResolution, prewarm: 64);
+            _tiles = new TileDirtyTracker(undoTilesPerSide);
+
+            if (compositeShader == null) compositeShader = Shader.Find("PieceBook/LayerComposite");
+            if (compositeShader != null) _compositeMat = new Material(compositeShader) { hideFlags = HideFlags.HideAndDontSave };
 
             // Layer 0 always exists.
             _layers.Add(NewRenderTexture());
+            _visible.Add(true);
             _activeLayer = 0;
+            _composite = NewRenderTexture();
+            _compositeDirty = true;
         }
 
         // ---------------------------------------------------------------- IDrawingCanvas
@@ -100,6 +135,8 @@ namespace PieceBook.DrawingEngine
         {
             if (_layers.Count >= maxLayers) return new LayerId(_layers.Count - 1);
             _layers.Add(NewRenderTexture());
+            _visible.Add(true);
+            _compositeDirty = true;
             return new LayerId(_layers.Count - 1);
         }
 
@@ -108,18 +145,34 @@ namespace PieceBook.DrawingEngine
             if (id.Value >= 0 && id.Value < _layers.Count) _activeLayer = id.Value;
         }
 
+        /// <summary>Show/hide a layer in the composite (§4.1). Not in the §4.3 contract — an engine extra.</summary>
+        public void SetLayerVisible(LayerId id, bool visible)
+        {
+            if (id.Value < 0 || id.Value >= _visible.Count) return;
+            _visible[id.Value] = visible;
+            _compositeDirty = true;
+        }
+
+        public bool IsLayerVisible(LayerId id) =>
+            id.Value >= 0 && id.Value < _visible.Count && _visible[id.Value];
+
         public void BeginStroke(StrokeConfig cfg)
         {
             if (_drawing) FinalizeStroke();
 
             _cfg = cfg;
             PushUndoSnapshot();
+
+            // §7 Strategy: pick the tool for this stroke over the shared GpuStamper.
+            _emitter = cfg.Tool == ToolKind.Marker ? (IStampStrategy)_marker : _spray;
             _emitter.Begin(cfg);
 
             _current = new RecordedStroke(512);
             _current.Reset(cfg.Cap != null ? cfg.Cap.id : "?",
                            cfg.Paint != null ? cfg.Paint.id : "?",
                            cfg.Color);
+
+            _tiles.Reset(); // start tracking which tiles this stroke touches (ENG-06)
 
             _drawing = true;
             _endPending = false;
@@ -144,6 +197,11 @@ namespace PieceBook.DrawingEngine
             };
             _pending.Add(s);
             _current.Samples.Add(s);
+
+            // Mark the tiles this sample's stamp footprint covers (ENG-06). Radius grows with the
+            // nozzle distance dial (§4.1); a small pad covers overspray.
+            float mark = 0.02f * (1f + NozzleDistance * 2.5f);
+            _tiles.MarkDisc(pos, mark);
         }
 
         public void EndStroke()
@@ -163,6 +221,7 @@ namespace PieceBook.DrawingEngine
             _undo.RemoveAt(_undo.Count - 1);
             Graphics.Blit(snap, ActiveRT);
             ReturnSnapshot(snap);
+            _compositeDirty = true;
         }
 
         public void Redo()
@@ -176,19 +235,43 @@ namespace PieceBook.DrawingEngine
             _redo.RemoveAt(_redo.Count - 1);
             Graphics.Blit(snap, ActiveRT);
             ReturnSnapshot(snap);
+            _compositeDirty = true;
         }
 
         public Texture2D Flatten()
         {
-            // Spike composites a single layer. Multi-layer flatten is future work (§4.1).
-            var rt = ActiveRT;
+            // ENG-05: composite every visible layer bottom→top, then read back (§4.1).
+            RefreshComposite();
             var prev = RenderTexture.active;
-            RenderTexture.active = rt;
+            RenderTexture.active = _composite;
             var tex = new Texture2D(canvasSize, canvasSize, TextureFormat.RGBA32, false);
             tex.ReadPixels(new Rect(0, 0, canvasSize, canvasSize), 0, 0);
             tex.Apply();
             RenderTexture.active = prev;
             return tex;
+        }
+
+        /// <summary>Recomposite the visible layer stack into <see cref="_composite"/> (ENG-05).</summary>
+        private void RefreshComposite()
+        {
+            CompositeInto(_composite);
+            _compositeDirty = false;
+        }
+
+        private void CompositeInto(RenderTexture dest)
+        {
+            ClearRenderTexture(dest);
+            if (_compositeMat == null)
+            {
+                // No composite shader available: fall back to the active layer so the wall is never blank.
+                Graphics.Blit(ActiveRT, dest);
+                return;
+            }
+            for (int i = 0; i < _layers.Count; i++)
+            {
+                if (i < _visible.Count && !_visible[i]) continue;
+                Graphics.Blit(_layers[i], dest, _compositeMat); // src-over, accumulates onto dest
+            }
         }
 
         public StrokeRecording GetRecording() => _recording;
@@ -220,6 +303,7 @@ namespace PieceBook.DrawingEngine
 
                     if (_pending.Count > 0) _latency.MarkSubmitted(Time.realtimeSinceStartup);
                     _pending.Clear();
+                    _compositeDirty = true;
 
                     if (ending) FinalizeStroke();
                 }
@@ -230,6 +314,7 @@ namespace PieceBook.DrawingEngine
                 _stamper.Begin(ActiveRT);
                 _drips.Tick(dt, _stamper);
                 _stamper.Flush();
+                _compositeDirty = true;
             }
         }
 
@@ -254,6 +339,7 @@ namespace PieceBook.DrawingEngine
         {
             ClearRenderTexture(ActiveRT);
             _drips.Reset();
+            _compositeDirty = true;
         }
 
         private RenderTexture NewRenderTexture()
@@ -314,6 +400,8 @@ namespace PieceBook.DrawingEngine
             _stamper?.Dispose();
 
             for (int i = 0; i < _layers.Count; i++) ReleaseRt(_layers[i]);
+            ReleaseRt(_composite);
+            if (_compositeMat != null) Destroy(_compositeMat);
             for (int i = 0; i < _undo.Count; i++) ReleaseRt(_undo[i]);
             for (int i = 0; i < _redo.Count; i++) ReleaseRt(_redo[i]);
             while (_snapPool.Count > 0) ReleaseRt(_snapPool.Pop());
