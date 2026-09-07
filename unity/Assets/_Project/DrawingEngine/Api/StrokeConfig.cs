@@ -3,6 +3,9 @@ using UnityEngine;
 
 namespace PieceBook.DrawingEngine
 {
+    /// <summary>The stamping tool for a stroke (ARQUITECTURA §7 Strategy). Fase 1 ships Spray + Marker.</summary>
+    public enum ToolKind { Spray, Marker }
+
     /// <summary>
     /// Everything a stroke needs to exist: cap + paint + color + initial pressure
     /// (ARQUITECTURA §4.3 comment "cap+pintura+color+presión inicial").
@@ -11,6 +14,9 @@ namespace PieceBook.DrawingEngine
     /// </summary>
     public struct StrokeConfig
     {
+        /// <summary>Which stamping strategy to use for this stroke (§7). Defaults to <see cref="ToolKind.Spray"/>.</summary>
+        public ToolKind Tool;
+
         /// <summary>Cap geometry: cone, density, falloff, flow, overspray (§9 CapDef).</summary>
         public CapDef Cap;
 

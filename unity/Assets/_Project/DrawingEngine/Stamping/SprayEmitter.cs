@@ -11,7 +11,7 @@ namespace PieceBook.DrawingEngine.Stamping
     /// grows the overspray mist in real time. Pure value-type math + UnityEngine.Random,
     /// so it never allocates during a stroke.
     /// </summary>
-    public sealed class SprayEmitter
+    public sealed class SprayEmitter : IStampStrategy
     {
         // Rolling window of the last four control points for the Catmull-Rom segment.
         private readonly Vector2[] _pts = new Vector2[4];
