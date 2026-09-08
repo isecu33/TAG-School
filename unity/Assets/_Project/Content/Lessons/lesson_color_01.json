@@ -1,0 +1,14 @@
+{
+  "id": "lesson_color_01",
+  "title": "Color: relleno y contorno por capas",
+  "chapter": 3,
+  "unlocks": [],
+  "glossaryRefs": ["fill", "outline", "color"],
+  "steps": [
+    { "type": "showcase", "media": "vid_color_layers", "maxSeconds": 13 },
+    { "type": "trace", "template": "tpl_bub_A", "tolerance": 0.2,
+      "metrics": ["precision", "line_weight"] },
+    { "type": "freeform", "prompt": "Rellena en la capa de fill y perfila en la de outline", "evaluate": ["precision"] },
+    { "type": "quiz", "glossaryRefs": ["color", "fill"], "correctIndex": 0 }
+  ]
+}
