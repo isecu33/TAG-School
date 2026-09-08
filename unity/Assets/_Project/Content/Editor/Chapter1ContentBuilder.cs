@@ -22,7 +22,7 @@ namespace PieceBook.Content.Editor
         private const string GenDir = Root + "/Generated";
         private const string LessonsDir = Root + "/Lessons";
 
-        [MenuItem("TAG-School/Build Chapter 1 Content")]
+        [MenuItem("TAG-School/Build MVP Content (Ch. 1-3)")]
         public static void Build()
         {
             Directory.CreateDirectory(GenDir);
@@ -36,18 +36,22 @@ namespace PieceBook.Content.Editor
             };
             var paint = Paint("paint_default", "All-purpose", 1f, 0.2f, 1.2f);
 
-            var alphabet = BuildHandstyle();
+            var handstyle = BuildAlphabet("alphabet_handstyle", "tpl_hs_", Lessons.Model.AlphabetStyle.Handstyle);
+            var bubble = BuildAlphabet("alphabet_bubble", "tpl_bub_", Lessons.Model.AlphabetStyle.Bubble);
             var audio = BuildAudioCatalog();
             var lessons = BuildLessonCatalog();
+            var glossary = BuildGlossaryCatalog();
+            var mockups = BuildMockups();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            var summary = $"Chapter 1 content built:\n" +
+            var summary = $"MVP content built (chapters 1-3):\n" +
                           $"- {caps.Length} caps + 1 paint\n" +
-                          $"- alphabet '{alphabet.id}' with {alphabet.letters.Length} letters\n" +
+                          $"- alphabets: {handstyle.letters.Length} handstyle + {bubble.letters.Length} bubble\n" +
                           $"- audio catalog ({audio.entries.Length} sfx)\n" +
-                          $"- lesson catalog ({lessons.lessons.Length} lessons)";
+                          $"- lesson catalog ({lessons.lessons.Length} lessons)\n" +
+                          $"- glossary + {mockups} wall mockups";
             Debug.Log("[Chapter1ContentBuilder] " + summary);
             EditorUtility.DisplayDialog("TAG-School", summary, "OK");
         }
@@ -71,12 +75,11 @@ namespace PieceBook.Content.Editor
             return p;
         }
 
-        private static AlphabetDef BuildHandstyle()
+        private static AlphabetDef BuildAlphabet(string id, string templatePrefix, AlphabetStyle style)
         {
-            var a = Load<AlphabetDef>($"{GenDir}/alphabet_handstyle.asset")
-                    ?? Create<AlphabetDef>($"{GenDir}/alphabet_handstyle.asset");
-            a.id = "alphabet_handstyle";
-            a.style = AlphabetStyle.Handstyle;
+            var a = Load<AlphabetDef>($"{GenDir}/{id}.asset") ?? Create<AlphabetDef>($"{GenDir}/{id}.asset");
+            a.id = id;
+            a.style = style;
 
             var letters = new AlphabetDef.Letter[26];
             for (int i = 0; i < 26; i++)
@@ -85,7 +88,7 @@ namespace PieceBook.Content.Editor
                 letters[i] = new AlphabetDef.Letter
                 {
                     letter = ch,
-                    templateId = $"tpl_hs_{ch}",
+                    templateId = $"{templatePrefix}{ch}",
                     points = GenerateLetterPolyline(i),
                     strokeOrder = new[] { 0 },
                     difficulty = 1 + (i % 3),
@@ -127,21 +130,53 @@ namespace PieceBook.Content.Editor
             return cat;
         }
 
+        // All authored lessons across the three MVP chapters, in play order.
+        private static readonly string[] LessonFiles =
+        {
+            "lesson_tag_01", "lesson_tag_02", "lesson_tag_03", "lesson_tag_04", "lesson_tag_05",
+            "lesson_throwup_01", "lesson_throwup_02", "lesson_throwup_03",
+            "lesson_color_01", "lesson_color_02",
+        };
+
         private static LessonCatalog BuildLessonCatalog()
         {
             var cat = Load<LessonCatalog>($"{GenDir}/LessonCatalog.asset")
                       ?? Create<LessonCatalog>($"{GenDir}/LessonCatalog.asset");
 
             var list = new List<TextAsset>();
-            for (int i = 1; i <= 5; i++)
+            foreach (var name in LessonFiles)
             {
-                var ta = AssetDatabase.LoadAssetAtPath<TextAsset>($"{LessonsDir}/lesson_tag_0{i}.json");
+                var ta = AssetDatabase.LoadAssetAtPath<TextAsset>($"{LessonsDir}/{name}.json");
                 if (ta != null) list.Add(ta);
-                else Debug.LogWarning($"[Chapter1ContentBuilder] Missing lesson_tag_0{i}.json");
+                else Debug.LogWarning($"[Chapter1ContentBuilder] Missing {name}.json");
             }
             cat.lessons = list.ToArray();
             EditorUtility.SetDirty(cat);
             return cat;
+        }
+
+        private static PieceBook.MetaGame.Glossary.GlossaryCatalog BuildGlossaryCatalog()
+        {
+            var cat = Load<PieceBook.MetaGame.Glossary.GlossaryCatalog>($"{GenDir}/GlossaryCatalog.asset")
+                      ?? Create<PieceBook.MetaGame.Glossary.GlossaryCatalog>($"{GenDir}/GlossaryCatalog.asset");
+            cat.glossaryJson = AssetDatabase.LoadAssetAtPath<TextAsset>($"{Root}/Glossary/glossary.json");
+            if (cat.glossaryJson == null) Debug.LogWarning("[Chapter1ContentBuilder] Missing glossary.json");
+            EditorUtility.SetDirty(cat);
+            return cat;
+        }
+
+        private static int BuildMockups()
+        {
+            var ids = new[] { "mockup_shutter", "mockup_train", "mockup_hall" };
+            foreach (var id in ids)
+            {
+                var m = Load<PieceBook.Social.Mockups.WallMockup>($"{GenDir}/{id}.asset")
+                        ?? Create<PieceBook.Social.Mockups.WallMockup>($"{GenDir}/{id}.asset");
+                m.id = id;
+                m.displayName = id.Replace("mockup_", "");
+                EditorUtility.SetDirty(m);
+            }
+            return ids.Length;
         }
 
         private static T Create<T>(string path) where T : ScriptableObject
