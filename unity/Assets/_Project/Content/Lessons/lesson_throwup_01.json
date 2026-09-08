@@ -1,0 +1,14 @@
+{
+  "id": "lesson_throwup_01",
+  "title": "El throw-up: burbujas rápidas",
+  "chapter": 2,
+  "unlocks": ["cap_fat"],
+  "glossaryRefs": ["throwup", "bubble"],
+  "steps": [
+    { "type": "showcase", "media": "vid_throwup_intro", "maxSeconds": 12 },
+    { "type": "trace", "template": "tpl_bub_O", "tolerance": 0.22,
+      "metrics": ["smoothness", "speed_consistency"] },
+    { "type": "freeform", "prompt": "Dibuja una burbuja de una pasada", "evaluate": ["smoothness"] },
+    { "type": "quiz", "glossaryRefs": ["throwup", "bubble"], "correctIndex": 0 }
+  ]
+}
