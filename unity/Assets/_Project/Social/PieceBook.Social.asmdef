@@ -1,0 +1,17 @@
+{
+    "name": "PieceBook.Social",
+    "rootNamespace": "PieceBook.Social",
+    "references": [
+        "PieceBook.Core",
+        "PieceBook.DrawingEngine"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
