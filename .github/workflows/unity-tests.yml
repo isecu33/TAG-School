@@ -7,11 +7,11 @@ on:
   push:
     branches: [main, "claude/**"]
     paths:
-      - "unity/**"
+      - "unity6/**"
       - ".github/workflows/unity-tests.yml"
   pull_request:
     paths:
-      - "unity/**"
+      - "unity6/**"
       - ".github/workflows/unity-tests.yml"
   workflow_dispatch: {}
 
@@ -29,8 +29,8 @@ jobs:
       - name: Cache Library
         uses: actions/cache@v4
         with:
-          path: unity/Library
-          key: Library-tag-school-${{ hashFiles('unity/Packages/manifest.json', 'unity/Assets/**') }}
+          path: unity6/Library
+          key: Library-tag-school-${{ hashFiles('unity6/Packages/manifest.json', 'unity6/Assets/**') }}
           restore-keys: |
             Library-tag-school-
             Library-
@@ -45,8 +45,8 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
         with:
-          projectPath: unity
-          unityVersion: 2022.3.40f1
+          projectPath: unity6
+          unityVersion: 6000.6.0f1
           testMode: editmode
           artifactsPath: editmode-artifacts
           githubToken: ${{ secrets.GITHUB_TOKEN }}

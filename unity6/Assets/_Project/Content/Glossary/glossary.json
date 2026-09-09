@@ -1,0 +1,28 @@
+{
+  "entries": [
+    { "id": "tag", "term": "Tag", "definition": "La firma más básica del escritor, de un solo trazo.",
+      "era": "70s", "relatedTerms": ["handstyle", "flow"] },
+    { "id": "handstyle", "term": "Handstyle", "definition": "El estilo personal de la firma a mano.",
+      "era": "70s", "relatedTerms": ["tag", "flow"] },
+    { "id": "flow", "term": "Flow", "definition": "Continuidad y ritmo con que se conectan las letras.",
+      "era": "80s", "relatedTerms": ["handstyle", "speed_consistency"] },
+    { "id": "line_weight", "term": "Peso de línea", "definition": "Grosor y estabilidad del trazo según presión/distancia.",
+      "era": "80s", "relatedTerms": ["pressure"] },
+    { "id": "pressure", "term": "Presión", "definition": "Fuerza aplicada que controla la distancia de boquilla y el peso.",
+      "era": "80s", "relatedTerms": ["line_weight"] },
+    { "id": "speed_consistency", "term": "Consistencia de velocidad", "definition": "Mantener una velocidad decidida y uniforme.",
+      "era": "80s", "relatedTerms": ["flow"] },
+    { "id": "throwup", "term": "Throw-up", "definition": "Pieza rápida de una o dos letras, normalmente en burbuja.",
+      "era": "80s", "relatedTerms": ["bubble", "fill", "outline"] },
+    { "id": "bubble", "term": "Bubble", "definition": "Letras redondeadas tipo globo.",
+      "era": "80s", "relatedTerms": ["throwup"] },
+    { "id": "fill", "term": "Relleno", "definition": "Color interior de la letra.",
+      "era": "80s", "relatedTerms": ["outline", "color"] },
+    { "id": "outline", "term": "Contorno", "definition": "Línea que perfila la letra por fuera del relleno.",
+      "era": "80s", "relatedTerms": ["fill"] },
+    { "id": "color", "term": "Color", "definition": "Uso de capas de color: relleno, contorno y detalles.",
+      "era": "90s", "relatedTerms": ["fill", "highlight"] },
+    { "id": "highlight", "term": "Brillo", "definition": "Toques de luz que dan profundidad a la pieza.",
+      "era": "90s", "relatedTerms": ["color", "outline"] }
+  ]
+}
