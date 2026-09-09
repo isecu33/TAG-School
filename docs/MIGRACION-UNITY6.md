@@ -1,7 +1,11 @@
-# Plan de migración a Unity 6 (6000.0.46f1)
+# Plan de migración a Unity 6 (6000.6.0f1)
+
+> **Versión exacta = la de `unity6/ProjectSettings/ProjectVersion.txt`** que suba el usuario.
+> El objetivo es **6000.6.0f1**; el CI y cualquier referencia se fijan a lo que diga ese fichero
+> tras el push, para no depender de una errata de versión.
 
 **Objetivo:** llevar todo el código de las Fases 0-2 (hoy en `unity/`, Unity 2022.3) a un proyecto
-nuevo **`unity6/`** en **Unity 6000.0.46f1 (URP)**, respetando la arquitectura (`docs/ARQUITECTURA.md`),
+nuevo **`unity6/`** en **Unity 6000.6.0f1 (URP)**, respetando la arquitectura (`docs/ARQUITECTURA.md`),
 la estructura de módulos (`§8`) y las reglas de dependencia (`§3`).
 
 **Autoría del trabajo:** commits a nombre del usuario (`isecu33`), como en el resto de la rama.
@@ -29,7 +33,7 @@ estructurales (abajo). **No se reescribe lógica.**
 
 ## 2. El shell (lo crea el usuario en el Hub)
 
-Crear en Unity Hub un proyecto **Universal 3D (URP)** con **Unity 6000.0.46f1**, carpeta `unity6/`
+Crear en Unity Hub un proyecto **Universal 3D (URP)** con **Unity 6000.6.0f1**, carpeta `unity6/`
 dentro del repo, y subirlo a la rama `claude/missing-plans-l7bknn`. Debe incluir:
 `unity6/ProjectSettings/`, `unity6/Packages/manifest.json`, `unity6/Assets/` (lo que genere el
 template). No subir `Library/`, `Temp/`, `obj/` (ya los ignora `.gitignore`).
@@ -80,8 +84,8 @@ Notas:
 
 ## 6. Validación final (tras integrar todos los módulos)
 
-1. `unity6/` abre en Unity 6000.0.46f1 sin errores de compilación (consola limpia).
+1. `unity6/` abre en Unity 6000.6.0f1 sin errores de compilación (consola limpia).
 2. **Window ▸ General ▸ Test Runner ▸ EditMode ▸ Run All** en verde (ahora los tests SÍ aparecen).
 3. Actualizar el CI (`.github/workflows/unity-tests.yml`): `projectPath: unity6`,
-   `unityVersion: 6000.0.46f1`.
+   `unityVersion: 6000.6.0f1`.
 4. Cuando `unity6/` esté validado, `unity/` (2022.3) puede archivarse o borrarse.
