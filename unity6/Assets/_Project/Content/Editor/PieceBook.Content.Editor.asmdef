@@ -1,0 +1,22 @@
+{
+    "name": "PieceBook.Content.Editor",
+    "rootNamespace": "PieceBook.Content.Editor",
+    "references": [
+        "PieceBook.Core",
+        "PieceBook.DrawingEngine",
+        "PieceBook.Lessons",
+        "PieceBook.MetaGame",
+        "PieceBook.Social"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

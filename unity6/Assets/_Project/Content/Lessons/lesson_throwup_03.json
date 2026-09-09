@@ -1,0 +1,14 @@
+{
+  "id": "lesson_throwup_03",
+  "title": "Tu throw-up completo",
+  "chapter": 2,
+  "unlocks": ["cap_ny_fat"],
+  "glossaryRefs": ["throwup", "fill", "outline"],
+  "steps": [
+    { "type": "showcase", "media": "vid_throwup_full", "maxSeconds": 14 },
+    { "type": "trace", "template": "tpl_bub_B", "tolerance": 0.18,
+      "metrics": ["smoothness", "speed_consistency", "line_weight"] },
+    { "type": "freeform", "prompt": "Throw-up de dos letras", "evaluate": ["smoothness", "speed_consistency"] },
+    { "type": "quiz", "glossaryRefs": ["throwup", "fill"], "correctIndex": 0 }
+  ]
+}

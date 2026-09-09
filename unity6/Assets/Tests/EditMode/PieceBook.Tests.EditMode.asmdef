@@ -1,0 +1,29 @@
+{
+    "name": "PieceBook.Tests.EditMode",
+    "rootNamespace": "PieceBook.Tests.EditMode",
+    "references": [
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "PieceBook.Core",
+        "PieceBook.DrawingEngine",
+        "PieceBook.Lessons",
+        "PieceBook.MetaGame",
+        "PieceBook.UI",
+        "PieceBook.Social"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
