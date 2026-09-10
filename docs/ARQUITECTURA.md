@@ -12,7 +12,7 @@ Juego móvil offline-first construido en Unity, con un motor de pintura propio s
 
 | Capa | Tecnología | Justificación |
 |---|---|---|
-| Motor | **Unity 2022 LTS (URP)** | Único motor con brush engine performante + AR Foundation (ARKit/ARCore unificado) + build iOS/Android desde un código. Godot 4 se descartó por madurez inferior de su stack RA. |
+| Motor | **Unity 6.0.6.0f1 (URP)** | Único motor con brush engine performante + AR Foundation (ARKit/ARCore unificado) + build iOS/Android desde un código. Godot 4 se descartó por madurez inferior de su stack RA. |
 | Lenguaje | C# (.NET Standard 2.1) | Estándar Unity. |
 | Render | Universal Render Pipeline | Shaders custom del spray, buen rendimiento en gama media. |
 | RA | AR Foundation 5.x (ARKit + ARCore) | Detección de planos verticales, anclaje de piezas, oclusión donde el hardware lo permita. |
