@@ -4,7 +4,7 @@
 **Alcance:** validar latencia y feel del spray del motor de pintura. Criterios §4.2:
 latencia input→píxel **< 30 ms** (ideal 16) y **60 fps** sostenidos dibujando.
 **Proyecto Unity:** [`/unity6`](unity6) (Unity 6.0.6.0f1 · URP). **Fuente de verdad:**
-[`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md). Rutas de código: `unity/Assets/_Project/…`.
+[`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md). Rutas de código: `unity6/Assets/_Project/…`.
 
 ---
 

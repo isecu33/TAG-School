@@ -108,7 +108,7 @@ Anota las cifras en `INFORME-GO-NOGO.md §3` (tabla lista para rellenar).
 ```
 docs/ARQUITECTURA.md            fuente de verdad (§4 motor, §4.3 API, §8 estructura)
 INFORME-GO-NOGO.md              veredicto + métricas
-unity/
+unity6/
   Assets/_Project/
     Core/                       PieceBook.Core        EventBus tipado + eventos
     DrawingEngine/              PieceBook.DrawingEngine (API PURA, sin UI)
@@ -124,7 +124,7 @@ unity/
       Diagnostics/              FrameStats + LatencyProbe
     Content/                    caps + paint (generados)
     Spike/                      PieceBook.Spike (harness; borrar en Fase 1)
-  Tests/EditMode/               pooling, Catmull-Rom, accumulator, EventBus
+  Assets/Tests/EditMode/        pooling, Catmull-Rom, accumulator, EventBus
 ```
 
 ## Limitaciones conocidas (spike, a propósito)
