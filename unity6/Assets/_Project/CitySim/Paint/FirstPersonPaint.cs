@@ -66,6 +66,11 @@ namespace PieceBook.CitySim.Paint
             SetVisible(false);
         }
 
+        private void OnDestroy()
+        {
+            _canvas?.Dispose();
+        }
+
         public void Tick(float dt)
         {
             if (!Active) return;
