@@ -53,12 +53,13 @@ namespace PieceBook.MetaGame.Jams
             jam.IsValid && _save.Current.IsUnlocked(ClaimMarker(jam.Id));
 
         /// <summary>
-        /// Participate in <paramref name="jam"/>: grant its reward once. Returns false if the jam is
-        /// invalid or already claimed. The claim marker lives in Progress so it survives across sessions.
+        /// Participate in <paramref name="jam" /> at <paramref name="nowUnix" />: grant its reward once.
+        /// Returns false if the jam is outside its window, invalid, or already claimed.
+        /// The claim marker lives in Progress so it survives across sessions.
         /// </summary>
-        public bool Participate(JamDef jam)
+        public bool Participate(JamDef jam, long nowUnix)
         {
-            if (!jam.IsValid) return false;
+            if (!jam.IsValid || !jam.ContainsTime(nowUnix)) return false;
             var marker = ClaimMarker(jam.Id);
             if (_save.Current.IsUnlocked(marker)) return false; // already participated
 

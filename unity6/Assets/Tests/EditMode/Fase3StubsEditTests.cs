@@ -62,5 +62,6 @@ namespace PieceBook.Tests.EditMode
             Assert.IsFalse(up.IsAvailable);
             Assert.IsNull(up.Upload("art_1", new byte[] { 1 }, "image/png"));
         }
+
     }
 }

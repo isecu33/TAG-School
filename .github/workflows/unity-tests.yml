@@ -5,7 +5,7 @@ name: Unity Tests (EditMode)
 
 on:
   push:
-    branches: [main, "claude/**"]
+    branches: [main, develop, "claude/**"]
     paths:
       - "unity6/**"
       - ".github/workflows/unity-tests.yml"

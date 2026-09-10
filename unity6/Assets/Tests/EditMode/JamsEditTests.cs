@@ -51,12 +51,12 @@ namespace PieceBook.Tests.EditMode
             var jam = svc.GetActiveJam(JamConfig(), 1500);
 
             Assert.IsFalse(svc.HasParticipated(jam));
-            Assert.IsTrue(svc.Participate(jam), "first participation succeeds");
+            Assert.IsTrue(svc.Participate(jam, 1500), "first participation succeeds");
             Assert.IsTrue(save.Current.IsUnlocked("cap_pumpkin"), "reward granted");
             Assert.AreEqual(1, unlocks, "ItemUnlocked fired once");
             Assert.IsTrue(svc.HasParticipated(jam));
 
-            Assert.IsFalse(svc.Participate(jam), "cannot participate twice");
+            Assert.IsFalse(svc.Participate(jam, 1500), "cannot participate twice");
             Assert.AreEqual(1, unlocks, "no extra reward event");
         }
 
@@ -66,12 +66,24 @@ namespace PieceBook.Tests.EditMode
             var repo = new InMemoryProgressRepo();
             var jam = new JamDef("jam_x", "t", 0, 10, "cap_x");
             var svc = new JamService(new SaveService(repo), new EventBus());
-            Assert.IsTrue(svc.Participate(jam));
+            Assert.IsTrue(svc.Participate(jam, 5));
 
             // A fresh service over the same repo still sees the claim.
             var svc2 = new JamService(new SaveService(repo), new EventBus());
             Assert.IsTrue(svc2.HasParticipated(jam));
-            Assert.IsFalse(svc2.Participate(jam));
+            Assert.IsFalse(svc2.Participate(jam, 5));
+
+
+        [Test]
+        public void Participate_RejectsExpiredJam()
+        {
+            var save = new SaveService(new InMemoryProgressRepo());
+            var svc = new JamService(save, new EventBus());
+            var jam = new JamDef("jam_x", "t", 0, 10, "cap_x");
+
+            Assert.IsFalse(svc.Participate(jam, 11), "expired jams cannot be claimed");
+        }
+            Assert.IsFalse(svc2.Participate(jam, 11), "expired jams cannot be claimed");
         }
     }
 }
