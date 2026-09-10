@@ -20,8 +20,18 @@ namespace PieceBook.Core.Services
 
         public Progress Current { get; private set; }
 
-        public void Flush() => _repo.Save(Current);
+        public void Flush()
+        {
+            Current.Touch(); // stamp for sync reconciliation (Fase 3 DATA-02)
+            _repo.Save(Current);
+        }
 
         public void Reload() => Current = _repo.Load();
+
+        public void Overwrite(Progress progress)
+        {
+            Current = progress ?? throw new System.ArgumentNullException(nameof(progress));
+            _repo.Save(Current); // persist as-is (preserve merged LastModifiedUnix; no Touch)
+        }
     }
 }
