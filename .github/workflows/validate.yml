@@ -1,0 +1,31 @@
+name: Project Validation
+
+# Chequeos rápidos SIN licencia de Unity: caza rompe-compilaciones (asmdefs/refs), JSON inválidos,
+# esquema de lecciones y guardas de arquitectura. La compilación/tests reales corren en
+# unity-tests.yml (GameCI) cuando el secret UNITY_LICENSE está configurado.
+
+on:
+  push:
+    branches: [main, develop, "claude/**", "stack/**"]
+    paths:
+      - "unity6/**"
+      - "ci/**"
+      - ".github/workflows/validate.yml"
+  pull_request:
+    paths:
+      - "unity6/**"
+      - "ci/**"
+      - ".github/workflows/validate.yml"
+  workflow_dispatch: {}
+
+jobs:
+  validate:
+    name: Validate project (no license)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate unity6 project
+        run: python3 ci/validate_project.py

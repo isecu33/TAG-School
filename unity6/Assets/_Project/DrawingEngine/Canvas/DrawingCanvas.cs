@@ -53,6 +53,7 @@ namespace PieceBook.DrawingEngine
 
         private Mesh _quad;
         private GpuStamper _stamper;
+        private bool _paintingAvailable;
         private SprayEmitter _spray;
         private MarkerEmitter _marker;
         private IStampStrategy _emitter;   // active tool strategy (§7), swapped per stroke
@@ -111,7 +112,15 @@ namespace PieceBook.DrawingEngine
             _quad = QuadMeshFactory.Create();
 
             if (stampShader == null) stampShader = Shader.Find("PieceBook/SprayStamp");
-            _stamper = new GpuStamper(_quad, stampShader);
+            if (stampShader == null)
+            {
+                Debug.LogError("[DrawingCanvas] Shader 'PieceBook/SprayStamp' not found. Painting is disabled.");
+            }
+            else
+            {
+                _stamper = new GpuStamper(_quad, stampShader);
+                _paintingAvailable = true;
+            }
             _spray = new SprayEmitter();
             _marker = new MarkerEmitter();
             _emitter = _spray;
@@ -158,6 +167,7 @@ namespace PieceBook.DrawingEngine
 
         public void BeginStroke(StrokeConfig cfg)
         {
+            if (!_paintingAvailable) return;
             if (_drawing) FinalizeStroke();
 
             _cfg = cfg;
@@ -280,6 +290,7 @@ namespace PieceBook.DrawingEngine
 
         private void LateUpdate()
         {
+            if (!_paintingAvailable) return;
             _frameStats.Sample(Time.unscaledDeltaTime);
             float dt = Time.unscaledDeltaTime;
 

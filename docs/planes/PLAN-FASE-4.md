@@ -24,6 +24,33 @@ binario, no un cronograma cerrado.
 
 ---
 
+## Estado tras Fase 3 — qué está listo para empezar
+
+La Fase 3 dejó **fronteras + stubs** sobre los que la Fase 4 engancha sin bloquearse en dispositivo:
+`ARModule` (stub `IArPlacementSession`), `IArtworkUploader` (Storage), `RemoteConfig`, `IAnalytics`,
+`ProgressSyncService`. Por eso cada tarea de Fase 4 tiene un **núcleo testeable ahora** (lógica pura,
+como hicimos en Fases 1-3) y una **parte de dispositivo/backend** que se valida en editor/servidor.
+
+| Tarea | Núcleo testeable ahora (EditMode) | Parte dispositivo/backend | Depende de |
+|---|---|---|---|
+| `CNT-07` Wildstyle | alfabeto+lecciones (parser/runner ya existen) | arte de letterforms | Fase 2 CNT-05 |
+| `ENG-09` Multicapa 8 | orden de `Flatten`, presupuesto de memoria (aserción bytes) | GPU 4096²/iPad | Fase 1 ENG-05/06 |
+| `AR-05` Paint-over RA | mapeo pantalla→plano→UV (math pura) | anclaje/persistencia RA | Fase 3 AR-02 |
+| `SOC-06` Galería+moderación | `IModerationGate` (oculta hasta aprobar; oculta hashes reportados) | Cloud Function + galería | Fase 3 DATA-03 (`IArtworkUploader`) |
+| `META-06` Jams | ventana activa/expirada por tiempo + `RemoteConfig` (pura) | orquestación remota del evento | `SOC-06`, DATA-04 |
+| `LES-06` Clasificador estilo | interfaz `IStyleClassifier` + fusión con métricas | modelo Sentis/CoreML on-device | Fase 1 LES-03 |
+
+**Orden de arranque sugerido (primeras tareas 100% testeables sin dispositivo):**
+1. `META-06` núcleo (lógica de ventana de jam sobre `RemoteConfig`).
+2. `SOC-06` núcleo (`IModerationGate` + estados de visibilidad).
+3. `AR-05` núcleo (mapeo pantalla→plano→UV con un plano fixture).
+4. `LES-06` interfaz + fusión (sin el modelo real).
+
+Cada una sigue el patrón ya usado: lógica pura + frontera, con su test EditMode; la parte de
+dispositivo/backend queda detrás de la interfaz y se valida aparte.
+
+---
+
 ## Contenido avanzado
 
 ### `CNT-07` · Wildstyle 🔴

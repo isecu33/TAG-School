@@ -1,8 +1,8 @@
 # TAG-School — *learn how to graffiti*
 
-Juego iOS/Android que enseña graffiti real. Este repositorio arranca por la **Fase 0
-(spike GO/NO-GO)**: un prototipo del **Drawing Engine** en Unity para validar **latencia** y
-**feel** del spray antes de comprometer la Fase 1.
+Juego iOS/Android que enseña graffiti real. El repositorio contiene el prototipo del
+Drawing Engine y la base Unity 6 de las Fases 1-4, con desarrollo offline-first y módulos
+preparados para contenido, RA, sincronización y comunidad.
 
 - **Fuente de verdad:** [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md). El motor implementa §4,
   respeta la API pública de §4.3 y la estructura de módulos/asmdefs de §8.
@@ -10,12 +10,37 @@ Juego iOS/Android que enseña graffiti real. Este repositorio arranca por la **F
   (`unity6/Assets/_Project/...`, `unity6/Assets/Tests/...`).
 - **Veredicto y métricas:** [`INFORME-GO-NOGO.md`](INFORME-GO-NOGO.md).
 
-Alcance Fase 0: solo el Drawing Engine (ENG-01…ENG-04). **No** incluye lecciones, RA, backend
-ni arte final.
+**Estado actual:** Unity 6.0.6.0f1 es la única base activa. `main` contiene la base estable
+de la migración; `develop` integra Fases 3-4 y es la rama desde la que continúa el desarrollo.
+La validación final en el editor Unity 6 y en dispositivo sigue siendo obligatoria antes de
+promover `develop` a `main`.
 
 - **Planes de las fases siguientes:** [`docs/planes/`](docs/planes/) descompone las Fases 1-4 del
   roadmap (`ARQUITECTURA §11`) en tareas codificadas y verificables. La forma de delegarlas está
   en [`docs/GUIA-AGENTES.md`](docs/GUIA-AGENTES.md) (regla de oro de §12).
+
+## Flujo de ramas
+
+```text
+main       versión estable validada
+develop    integración diaria y pruebas de las fases actuales
+feature/*  trabajo nuevo creado desde develop
+```
+
+Las ramas `stack/*`, `migration/*` y `chore/*` ya se han integrado o archivado. Las ramas
+`archive/*` conservan referencias históricas para rescatar documentación o código antiguo;
+no se usan para desarrollar. Antes de borrar una rama, comprueba que su trabajo está en
+`develop` o que existe una copia `archive/*`.
+
+## Estado de las fases
+
+- **Fase 0:** Drawing Engine y CitySim migrados a Unity 6; pendiente medir rendimiento real
+  en dispositivo.
+- **Fases 1-2:** Core, Lessons, UI, MetaGame, Social y Content integrados con tests EditMode.
+- **Fase 3:** fronteras de AR, Auth, sincronización, analítica y Remote Config integradas con
+  backends offline/stub. Las integraciones reales de Firebase/AR y el dispositivo aún faltan.
+- **Fase 4:** plan, validación de proyecto, Jams y puerta de moderación integrados. Wildstyle,
+  RA paint-over y backend de moderación completo siguen siendo trabajo futuro.
 
 ---
 
@@ -50,6 +75,13 @@ ni arte final.
 
 Al abrir por primera vez, si Unity pregunta por el backend de input, elige **Both** o
 **Input System** (el código soporta ambos; la presión del Pencil solo llega vía Input System).
+
+## Desarrollo diario
+
+1. Actualiza `develop` y crea una rama `feature/<fase>-<objetivo>` desde ella.
+2. Añade tests EditMode junto al código cuando el cambio tenga lógica verificable.
+3. Ejecuta la validación local disponible y abre una PR hacia `develop`.
+4. Tras revisar y probar en Unity 6, fusiona `develop` en `main` como release estable.
 
 ---
 
@@ -123,8 +155,12 @@ unity6/
       Input/StrokeInputController  pointer→UV; Pencil/touch/mouse
       Diagnostics/              FrameStats + LatencyProbe
     Content/                    caps + paint (generados)
+    ARModule/                   fronteras AR y stub offline (Fase 3)
+    MetaGame/Jams/              eventos temporales (Fase 4)
+    Social/Moderation/          puerta de visibilidad de galería (Fase 4)
     Spike/                      PieceBook.Spike (harness; borrar en Fase 1)
-  Assets/Tests/EditMode/        pooling, Catmull-Rom, accumulator, EventBus
+  Assets/Tests/EditMode/        tests de motor, contenido, Fases 1-4 y smoke tests
+ci/                             validación estructural sin licencia Unity
 ```
 
 ## Limitaciones conocidas (spike, a propósito)
