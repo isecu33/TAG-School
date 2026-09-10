@@ -18,5 +18,8 @@ namespace PieceBook.Core.Services
 
         /// <summary>Reload from the repository, discarding unsaved in-memory changes.</summary>
         void Reload();
+
+        /// <summary>Replace the live progress (e.g. after a sync merge) and persist it as-is.</summary>
+        void Overwrite(Progress progress);
     }
 }

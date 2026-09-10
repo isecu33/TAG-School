@@ -27,6 +27,12 @@ namespace PieceBook.Core.Save
         /// <summary>Artwork ids stored in the blackbook (§9 blackbookPages[]).</summary>
         public List<string> BlackbookPages = new List<string>();
 
+        /// <summary>Unix seconds of the last local mutation. Used by sync reconciliation (Fase 3 DATA-02).</summary>
+        public long LastModifiedUnix;
+
+        /// <summary>Stamp the aggregate as modified now (called by SaveService on flush).</summary>
+        public void Touch() => LastModifiedUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
         /// <summary>Records a lesson result, keeping the best crown count ever achieved.</summary>
         /// <returns>true if this beat the previous best (or was the first attempt).</returns>
         public bool RecordCrowns(string lessonId, int crowns)

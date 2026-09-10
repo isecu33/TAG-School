@@ -22,6 +22,7 @@ namespace PieceBook.Core.Save
             public string[] blackbookPages;
             public int streak;
             public int coins;
+            public long lastModifiedUnix;
         }
 
         public static string ToJson(Progress p, bool prettyPrint = false)
@@ -42,6 +43,7 @@ namespace PieceBook.Core.Save
                 blackbookPages = p.BlackbookPages.ToArray(),
                 streak = p.Streak,
                 coins = p.Coins,
+                lastModifiedUnix = p.LastModifiedUnix,
             };
             return JsonUtility.ToJson(dto, prettyPrint);
         }
@@ -63,6 +65,7 @@ namespace PieceBook.Core.Save
             if (dto.blackbookPages != null) p.BlackbookPages = new List<string>(dto.blackbookPages);
             p.Streak = dto.streak;
             p.Coins = dto.coins;
+            p.LastModifiedUnix = dto.lastModifiedUnix;
             return p;
         }
     }
