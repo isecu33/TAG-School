@@ -9,7 +9,8 @@
         "PieceBook.Lessons",
         "PieceBook.MetaGame",
         "PieceBook.UI",
-        "PieceBook.Social"
+        "PieceBook.Social",
+        "PieceBook.CitySim"
     ],
     "includePlatforms": [
         "Editor"

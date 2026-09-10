@@ -111,6 +111,12 @@ namespace PieceBook.DrawingEngine
             _quad = QuadMeshFactory.Create();
 
             if (stampShader == null) stampShader = Shader.Find("PieceBook/SprayStamp");
+            if (stampShader == null)
+            {
+                Debug.LogError("[DrawingCanvas] Shader 'PieceBook/SprayStamp' not found. Painting is disabled.");
+                enabled = false;
+                return;
+            }
             _stamper = new GpuStamper(_quad, stampShader);
             _spray = new SprayEmitter();
             _marker = new MarkerEmitter();

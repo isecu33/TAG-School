@@ -72,7 +72,7 @@ namespace PieceBook.Tests.EditMode
             var svc2 = new JamService(new SaveService(repo), new EventBus());
             Assert.IsTrue(svc2.HasParticipated(jam));
             Assert.IsFalse(svc2.Participate(jam, 5));
-
+        }
 
         [Test]
         public void Participate_RejectsExpiredJam()
@@ -82,8 +82,6 @@ namespace PieceBook.Tests.EditMode
             var jam = new JamDef("jam_x", "t", 0, 10, "cap_x");
 
             Assert.IsFalse(svc.Participate(jam, 11), "expired jams cannot be claimed");
-        }
-            Assert.IsFalse(svc2.Participate(jam, 11), "expired jams cannot be claimed");
         }
     }
 }
