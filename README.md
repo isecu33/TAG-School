@@ -6,8 +6,8 @@ Juego iOS/Android que enseña graffiti real. Este repositorio arranca por la **F
 
 - **Fuente de verdad:** [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md). El motor implementa §4,
   respeta la API pública de §4.3 y la estructura de módulos/asmdefs de §8.
-- **Proyecto Unity:** [`/unity`](unity) (Unity 2022 LTS · URP). La estructura interna sigue §8
-  (`unity/Assets/_Project/...`, `unity/Tests/...`).
+- **Proyecto Unity:** [`/unity6`](unity6) (Unity 6.0.6.0f1 · URP). La estructura interna sigue §8
+  (`unity6/Assets/_Project/...`, `unity6/Assets/Tests/...`).
 - **Veredicto y métricas:** [`INFORME-GO-NOGO.md`](INFORME-GO-NOGO.md).
 
 Alcance Fase 0: solo el Drawing Engine (ENG-01…ENG-04). **No** incluye lecciones, RA, backend
@@ -43,9 +43,9 @@ ni arte final.
 
 ## Requisitos
 
-- **Unity 2022.3 LTS** (probado contra 2022.3.40f1; cualquier parche 2022.3.x sirve).
+- **Unity 6.0.6.0f1** (versión fijada en `unity6/ProjectSettings/ProjectVersion.txt`).
 - Módulos de build **iOS** y/o **Android** para desplegar en dispositivo.
-- Paquetes (declarados en `unity/Packages/manifest.json`): URP 14, **Input System** 1.7, uGUI,
+- Paquetes (declarados en `unity6/Packages/manifest.json`): URP 17, **Input System** 1.20, uGUI,
   Test Framework. Se resuelven al abrir.
 
 Al abrir por primera vez, si Unity pregunta por el backend de input, elige **Both** o
@@ -55,11 +55,11 @@ Al abrir por primera vez, si Unity pregunta por el backend de input, elige **Bot
 
 ## Cómo abrir y probar (editor)
 
-1. Unity Hub → **Add** → selecciona la carpeta **`unity/`** de este repo. Ábrela con 2022.3 LTS.
+1. Unity Hub → **Add** → selecciona la carpeta **`unity6/`** de este repo. Ábrela con Unity 6.0.6.0f1.
 2. Menú **`TAG-School ▸ Setup Phase 0 Spike`**. Esto:
-   - genera los ScriptableObjects de `unity/Assets/_Project/Content` (3 caps + paint),
+  - genera los ScriptableObjects de `unity6/Assets/_Project/Content` (3 caps + paint),
    - registra el shader `PieceBook/SprayStamp` en *Always Included Shaders* (para builds),
-   - construye y guarda la escena `unity/Assets/_Project/Spike/Scenes/SpraySpike.unity` y la añade a Build Settings.
+  - construye y guarda la escena `unity6/Assets/_Project/Spike/Scenes/SpraySpike.unity` y la añade a Build Settings.
 3. Pulsa **Play**. Pinta sobre la pared con ratón (editor) o dedo/Pencil (dispositivo).
 
 > Atajo: crea una escena vacía, añade el componente **`SprayDemoBootstrap`** a un GameObject y

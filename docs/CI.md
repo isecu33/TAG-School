@@ -1,8 +1,8 @@
-# CI — validar los tests en Unity
+# CI — validar los tests en Unity 6
 
 El workflow [`.github/workflows/unity-tests.yml`](../.github/workflows/unity-tests.yml) compila el
-proyecto y ejecuta los **tests EditMode** en un Unity 2022.3.40f1 real (vía [GameCI](https://game.ci))
-en cada push a `main`/`claude/**` y en cada PR que toque `unity/**`.
+proyecto y ejecuta los **tests EditMode** en Unity 6.0.6.0f1 real (vía [GameCI](https://game.ci))
+en cada push a `main`/`claude/**` y en cada PR que toque `unity6/**`.
 
 ## 1. Requisito: licencia de Unity (una vez)
 
@@ -47,17 +47,17 @@ Los tests EditMode de las Fases 1-2 (todos headless, sin GPU ni escena):
 
 Rutas GPU, escena/prefabs, plugins nativos (MP4, share nativo) y dispositivo. Eso se valida
 abriendo el proyecto en el editor y en un iPhone 11 / Android gama media — ver
-[`unity/Assets/_Project/MODULES.md`](../unity/Assets/_Project/MODULES.md).
+[`unity6/Assets/_Project/MODULES.md`](../unity6/Assets/_Project/MODULES.md).
 
 ## Correr los tests localmente (sin CI)
 
-1. Abre `unity/` con Unity 2022.3.40f1.
+1. Abre `unity6/` con Unity 6.0.6.0f1.
 2. **Window ▸ General ▸ Test Runner**.
 3. Pestaña **EditMode ▸ Run All**.
 
 O por línea de comandos:
 
 ```bash
-Unity -batchmode -runTests -projectPath unity -testPlatform EditMode \
+Unity -batchmode -runTests -projectPath unity6 -testPlatform EditMode \
   -testResults results.xml -logFile - -quit
 ```

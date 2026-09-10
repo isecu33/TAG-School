@@ -88,4 +88,4 @@ Notas:
 2. **Window ▸ General ▸ Test Runner ▸ EditMode ▸ Run All** en verde (ahora los tests SÍ aparecen).
 3. Actualizar el CI (`.github/workflows/unity-tests.yml`): `projectPath: unity6`,
    `unityVersion: 6000.6.0f1`.
-4. Cuando `unity6/` esté validado, `unity/` (2022.3) puede archivarse o borrarse.
+4. Cuando `unity6/` esté validado, `unity/` (2022.3) se archiva en `rescue/master-unity6` y se elimina de la línea principal.
