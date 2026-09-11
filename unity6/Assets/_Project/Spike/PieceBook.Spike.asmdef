@@ -4,6 +4,7 @@
     "references": [
         "PieceBook.Core",
         "PieceBook.DrawingEngine",
+        "PieceBook.Lessons",
         "Unity.InputSystem",
         "UnityEngine.UI"
     ],
