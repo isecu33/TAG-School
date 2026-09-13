@@ -1,0 +1,37 @@
+name: Acquire Unity activation file
+
+# One-off helper to activate a Personal (free) Unity license for CI.
+#
+# HOW TO USE (once):
+#   1. GitHub ▸ Actions ▸ "Acquire Unity activation file" ▸ Run workflow.
+#   2. Download the "Manual Activation File" artifact (a Unity_v6000.x.alf file).
+#   3. Go to https://license.unity3d.com/manual , upload the .alf, choose
+#      "Unity Personal Edition" (non-professional / free), and download the
+#      resulting Unity_v6000.x.ulf license file.
+#   4. Open the .ulf in a text editor, copy ALL of it, and save it as a repo
+#      secret:  Settings ▸ Secrets and variables ▸ Actions ▸ New secret
+#      Name: UNITY_LICENSE   Value: <full .ulf contents>
+#   5. Re-run the EditMode tests workflow — it will now activate and run.
+#
+# Personal licenses do NOT use UNITY_SERIAL. This workflow can be deleted once
+# UNITY_LICENSE is set.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  activation:
+    name: Request manual activation file
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request activation file
+        id: getManualLicenseFile
+        uses: game-ci/unity-request-activation-file@v2
+        with:
+          unityVersion: 6000.6.0f1
+
+      - name: Upload activation file
+        uses: actions/upload-artifact@v4
+        with:
+          name: Manual Activation File
+          path: ${{ steps.getManualLicenseFile.outputs.filePath }}
