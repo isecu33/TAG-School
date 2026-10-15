@@ -5,7 +5,8 @@
   "unlocks": ["cap_soft"],
   "glossaryRefs": ["tag", "handstyle"],
   "steps": [
-    { "type": "showcase", "media": "vid_tag_basics", "maxSeconds": 10 },
+    { "type": "showcase", "media": "vid_tag_basics", "maxSeconds": 10,
+      "caption": "Un tag es tu firma: un solo trazo, sin levantar la mano. Mira cómo se traza la A y luego hazla tú. Brazo suelto, muñeca firme." },
     { "type": "trace", "template": "tpl_hs_A", "tolerance": 0.22,
       "metrics": ["smoothness", "line_weight"] },
     { "type": "freeform", "prompt": "Repite la A a mano alzada", "evaluate": ["smoothness"] },

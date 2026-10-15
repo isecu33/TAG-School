@@ -5,7 +5,8 @@
   "unlocks": [],
   "glossaryRefs": ["flow", "speed_consistency"],
   "steps": [
-    { "type": "showcase", "media": "vid_speed", "maxSeconds": 9 },
+    { "type": "showcase", "media": "vid_speed", "maxSeconds": 9,
+      "caption": "Un trazo lento tiembla y gotea. Decide el recorrido antes de apretar y ejecútalo a velocidad constante." },
     { "type": "trace", "template": "tpl_hs_K", "tolerance": 0.18,
       "metrics": ["speed_consistency", "smoothness"] },
     { "type": "freeform", "prompt": "Un trazo rápido y seguro", "evaluate": ["speed_consistency"] },

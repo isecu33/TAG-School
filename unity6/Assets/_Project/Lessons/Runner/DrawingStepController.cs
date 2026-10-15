@@ -27,37 +27,72 @@ namespace PieceBook.Lessons.Runner
             _templates = templates ?? throw new ArgumentNullException(nameof(templates));
         }
 
+        /// <summary>Tolerance for a freeform step's Precision, measured after aligning to the template.</summary>
+        public const float FreeformPrecisionTolerance = 0.2f;
+
         /// <summary>
         /// Evaluate the current drawing step from the canvas recording and submit its crowns.
         /// Returns the full result for the UI (per-metric breakdown, overall).
         /// </summary>
         public EvaluationResult EvaluateAndSubmitCurrent()
         {
+            var result = EvaluateCurrent();
+            _runner.SubmitDrawing(result.Crowns);
+            return result;
+        }
+
+        /// <summary>
+        /// Evaluate the current drawing step WITHOUT submitting, so the UI can show the result and
+        /// let the player retry before accepting it (<see cref="LessonRunner.SubmitDrawing"/>).
+        /// A freeform step that lists Precision is scored against the lesson's trace template after
+        /// aligning the drawing to it (shape, not position) — without a template it is skipped (§5).
+        /// </summary>
+        public EvaluationResult EvaluateCurrent()
+        {
             var step = _runner.Current;
-            var recording = _canvas.GetRecording();
-            var last = (recording != null && recording.StrokeCount > 0)
-                ? recording.Strokes[recording.StrokeCount - 1]
-                : null;
+            StrokeSampleAdapter.Extract(LastStroke(), out var pos, out var times, out var pressures);
 
-            StrokeSampleAdapter.Extract(last, out var pos, out var times, out var pressures);
-
-            EvaluationResult result;
             if (step is TraceStep trace)
             {
                 _templates.TryGet(trace.Template, out var template);
-                result = TraceEvaluator.Evaluate(pos, times, pressures, trace.Metrics, template, trace.Tolerance);
+                return TraceEvaluator.Evaluate(pos, times, pressures, trace.Metrics, template, trace.Tolerance);
             }
-            else if (step is FreeformStep free)
+            if (step is FreeformStep free)
             {
-                result = TraceEvaluator.Evaluate(pos, times, pressures, free.Evaluate);
+                var template = LessonTraceTemplate();
+                if (template != null && Array.IndexOf(free.Evaluate, TraceMetric.Precision) >= 0)
+                    return TraceEvaluator.Evaluate(StrokeMetrics.AlignToTemplate(pos, template), times, pressures,
+                                                   free.Evaluate, template, FreeformPrecisionTolerance);
+                return TraceEvaluator.Evaluate(pos, times, pressures, free.Evaluate);
             }
-            else
-            {
-                throw new InvalidOperationException("Current step is not a drawing step.");
-            }
+            throw new InvalidOperationException("Current step is not a drawing step.");
+        }
 
-            _runner.SubmitDrawing(result.Crowns);
-            return result;
+        /// <summary>How much of the current trace step's template the last stroke covers (0..1).</summary>
+        public float CoverageOfCurrent()
+        {
+            if (!(_runner.Current is TraceStep trace) || !_templates.TryGet(trace.Template, out var template))
+                return 1f;
+            StrokeSampleAdapter.Extract(LastStroke(), out var pos, out _, out _);
+            return StrokeMetrics.Coverage(pos, template, trace.Tolerance * 0.6f);
+        }
+
+        private RecordedStroke LastStroke()
+        {
+            var recording = _canvas.GetRecording();
+            return (recording != null && recording.StrokeCount > 0)
+                ? recording.Strokes[recording.StrokeCount - 1]
+                : null;
+        }
+
+        private TraceTemplate LessonTraceTemplate()
+        {
+            var lesson = _runner.Lesson;
+            if (lesson == null) return null;
+            foreach (var s in lesson.Steps)
+                if (s is TraceStep t && _templates.TryGet(t.Template, out var template))
+                    return template;
+            return null;
         }
     }
 }

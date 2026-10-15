@@ -5,7 +5,8 @@
   "unlocks": ["cap_fat"],
   "glossaryRefs": ["throwup", "bubble"],
   "steps": [
-    { "type": "showcase", "media": "vid_throwup_intro", "maxSeconds": 12 },
+    { "type": "showcase", "media": "vid_throwup_intro", "maxSeconds": 12,
+      "caption": "El throw-up es rápido: letras redondas, hinchadas, hechas en segundos. Empieza por la O, la burbuja perfecta." },
     { "type": "trace", "template": "tpl_bub_O", "tolerance": 0.22,
       "metrics": ["smoothness", "speed_consistency"] },
     { "type": "freeform", "prompt": "Dibuja una burbuja de una pasada", "evaluate": ["smoothness"] },

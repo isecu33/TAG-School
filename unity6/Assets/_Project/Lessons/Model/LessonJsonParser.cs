@@ -18,6 +18,7 @@ namespace PieceBook.Lessons.Model
             public string type;
             public string media;
             public float maxSeconds;
+            public string caption;
             public string template;
             public float tolerance;
             public string[] metrics;
@@ -64,7 +65,7 @@ namespace PieceBook.Lessons.Model
             switch (s.type)
             {
                 case "showcase":
-                    return new ShowcaseStep { Media = s.media, MaxSeconds = s.maxSeconds };
+                    return new ShowcaseStep { Media = s.media, MaxSeconds = s.maxSeconds, Caption = s.caption };
                 case "trace":
                     return new TraceStep
                     {
