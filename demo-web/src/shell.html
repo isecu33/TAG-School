@@ -1,0 +1,171 @@
+<title>TAG School</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sedgwick+Ave+Display&family=Barlow+Semi+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>/*__STYLE__*/</style>
+
+<div class="app" id="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">TAG School</span>
+      <span class="eyebrow">demo jugable · learn how to graffiti</span>
+    </div>
+    <div class="stats" aria-label="Tu progreso">
+      <button class="chip writer" id="writerChip" type="button" title="Cambiar nombre de writer"></button>
+      <span class="chip" title="Coronas"><svg class="ico crown-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18l-1.5-10-5 4.5L12 5l-2.5 7.5-5-4.5z"/></svg><b id="statCrowns">0</b></span>
+      <span class="chip" title="Monedas"><svg class="ico coin-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg><b id="statCoins">0</b></span>
+      <button class="chip icon-btn" id="soundBtn" type="button" aria-pressed="true" title="Sonido">♪</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Secciones">
+    <button role="tab" data-screen="map" id="tab-map">Lecciones</button>
+    <button role="tab" data-screen="free" id="tab-free">Muro libre</button>
+    <button role="tab" data-screen="book" id="tab-book">Blackbook</button>
+    <button role="tab" data-screen="glossary" id="tab-glossary">Glosario</button>
+    <button role="tab" data-screen="store" id="tab-store">Tienda</button>
+  </nav>
+
+  <main id="main">
+    <!-- MAPA DE LECCIONES -->
+    <section class="screen" id="screen-map" hidden>
+      <div class="map-head">
+        <div class="mentor-line">
+          <span class="avatar" aria-hidden="true">MK</span>
+          <p id="mapMentor"></p>
+        </div>
+        <label class="toggle"><input type="checkbox" id="reviewMode"> Abrir todas las lecciones</label>
+      </div>
+      <div id="chapters" class="chapters"></div>
+    </section>
+
+    <!-- ESCENARIO (lección y muro libre comparten pared y herramientas) -->
+    <section class="screen stage" id="screen-stage" hidden>
+      <div class="stage-wall">
+        <div class="wall" id="wall">
+          <canvas id="bgCanvas" width="1024" height="1024"></canvas>
+          <canvas id="paintCanvas" width="1024" height="1024"></canvas>
+          <canvas id="guideCanvas" width="1024" height="1024"></canvas>
+          <canvas id="inputCanvas" width="1024" height="1024" aria-label="Pared: pinta aquí"></canvas>
+          <span class="wall-hud" id="hud"></span>
+        </div>
+        <div class="tools" id="tools">
+          <div class="tool-row" id="capRow" aria-label="Caps"></div>
+          <div class="tool-row" id="colorRow" aria-label="Colores"></div>
+          <div class="tool-row slider-row">
+            <label for="distance">Distancia de boquilla</label>
+            <input type="range" id="distance" min="0" max="100" value="25">
+            <span class="mono" id="distanceVal">25</span>
+          </div>
+          <div class="tool-row actions">
+            <button type="button" class="btn ghost" id="undoBtn">Deshacer</button>
+            <button type="button" class="btn ghost" id="redoBtn">Rehacer</button>
+            <button type="button" class="btn ghost" id="clearBtn">Limpiar</button>
+            <span class="wall-picker" id="wallPicker"></span>
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel" id="panel">
+        <!-- lección -->
+        <div id="lessonPanel" hidden>
+          <p class="crumb" id="lessonCrumb"></p>
+          <h2 class="lesson-title" id="lessonTitle"></h2>
+          <ol class="steps" id="stepPills"></ol>
+          <div class="mentor">
+            <span class="avatar" aria-hidden="true">MK</span>
+            <p class="bubble" id="mentorText"></p>
+          </div>
+          <div id="stepBody" class="step-body"></div>
+          <div id="resultCard" class="result" hidden></div>
+          <button type="button" class="btn link" id="exitLesson">Salir al mapa</button>
+        </div>
+        <!-- muro libre -->
+        <div id="freePanel" hidden>
+          <h2 class="lesson-title">Muro libre</h2>
+          <p class="muted">Sin plantilla y sin nota. Prueba caps, distancia y colores. Si te quedas quieto apretando, la pintura gotea.</p>
+          <div class="field">
+            <label for="pieceName">Título de la pieza</label>
+            <input id="pieceName" type="text" maxlength="24" placeholder="Mi primer throw-up">
+          </div>
+          <button type="button" class="btn primary" id="saveFree">Guardar en el blackbook</button>
+          <p class="muted small" id="freeMsg" role="status"></p>
+        </div>
+      </aside>
+    </section>
+
+    <!-- REVIEW -->
+    <section class="screen" id="screen-review" hidden>
+      <div class="review" id="review"></div>
+    </section>
+
+    <!-- BLACKBOOK -->
+    <section class="screen" id="screen-book" hidden>
+      <div class="section-head">
+        <h2>Blackbook</h2>
+        <p class="muted">Tus piezas guardadas. Toca una para verla sobre una pared.</p>
+      </div>
+      <div class="book-grid" id="bookGrid"></div>
+    </section>
+
+    <!-- GLOSARIO -->
+    <section class="screen" id="screen-glossary" hidden>
+      <div class="section-head">
+        <h2>Glosario</h2>
+        <p class="muted">Los términos que salen en las lecciones y en los quizzes.</p>
+      </div>
+      <dl class="glossary" id="glossaryList"></dl>
+    </section>
+
+    <!-- TIENDA -->
+    <section class="screen" id="screen-store" hidden>
+      <div class="section-head">
+        <h2>Tienda de caps</h2>
+        <p class="muted">Cada corona nueva da 10 monedas. Las lecciones también regalan caps.</p>
+      </div>
+      <div class="store-grid" id="storeGrid"></div>
+      <div class="danger-zone">
+        <button type="button" class="btn link" id="resetBtn">Reiniciar progreso de la demo</button>
+        <span id="resetConfirm" hidden>
+          ¿Seguro? Se borran coronas, monedas y blackbook.
+          <button type="button" class="btn ghost" id="resetYes">Sí, borrar</button>
+          <button type="button" class="btn link" id="resetNo">Cancelar</button>
+        </span>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span id="footInfo"></span>
+  </footer>
+</div>
+
+<!-- Onboarding: nombre de writer -->
+<div class="modal" id="onboard" hidden>
+  <form class="modal-card" id="onboardForm">
+    <span class="avatar big" aria-hidden="true">MK</span>
+    <h2>Soy Meka. Te enseño a pintar.</h2>
+    <p class="muted">Antes de empezar: ¿con qué nombre vas a firmar? Es tu nombre de writer. Corto, que se lea, que te guste trazarlo.</p>
+    <label for="writerInput">Nombre de writer</label>
+    <input id="writerInput" type="text" maxlength="10" autocomplete="off" placeholder="NOVA" required>
+    <button type="submit" class="btn primary">Empezar</button>
+  </form>
+</div>
+
+<!-- Mockup de pared -->
+<div class="modal" id="mockup" hidden>
+  <div class="modal-card wide">
+    <div class="mockup-scene" id="mockupScene">
+      <canvas id="mockupBg" width="800" height="500"></canvas>
+      <img id="mockupImg" alt="Tu pieza sobre la pared">
+    </div>
+    <div class="mockup-bar">
+      <span id="mockupTitle"></span>
+      <span class="wall-picker" id="mockupPicker"></span>
+      <button type="button" class="btn ghost" id="mockupClose">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>/*__SCRIPT__*/</script>

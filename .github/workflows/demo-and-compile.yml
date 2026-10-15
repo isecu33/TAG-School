@@ -1,0 +1,55 @@
+name: Compile check + demo web
+
+# Validaciones que NO necesitan licencia de Unity:
+#  - compile check: compila cada asmdef de unity6/ contra DLLs de referencia de Unity (NuGet).
+#  - demo web: genera demo-web/dist desde el contenido del proyecto y la juega con Playwright.
+
+on:
+  push:
+    branches: [main]
+    paths: ["unity6/**", "demo-web/**", "tools/unity-compile-check/**", ".github/workflows/demo-and-compile.yml"]
+  pull_request:
+    paths: ["unity6/**", "demo-web/**", "tools/unity-compile-check/**", ".github/workflows/demo-and-compile.yml"]
+  workflow_dispatch: {}
+
+jobs:
+  unity-compile-check:
+    name: Unity compile check (sin licencia)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Compilar todos los asmdef
+        run: python3 tools/unity-compile-check/compile_check.py
+
+  demo-web:
+    name: Demo web (build + smoke E2E)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Instalar Playwright + Chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Build de la demo desde el contenido de Unity
+        run: node demo-web/build.mjs
+      - name: Smoke E2E (escritorio + móvil)
+        run: node demo-web/tools/smoke.mjs demo-web/dist/screens
+      - name: Subir demo y capturas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tag-school-demo
+          path: |
+            demo-web/dist/tag-school-demo.html
+            demo-web/dist/screens
+          if-no-files-found: warn

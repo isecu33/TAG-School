@@ -10,6 +10,14 @@ Juego iOS/Android que enseña graffiti real. Este repositorio arranca por la **F
   (`unity6/Assets/_Project/...`, `unity6/Assets/Tests/...`).
 - **Veredicto y métricas:** [`INFORME-GO-NOGO.md`](INFORME-GO-NOGO.md).
 
+## ▶ Demo jugable
+
+- **Web, sin instalar nada:** abre [`demo-web/dist/tag-school-demo.html`](demo-web/dist/tag-school-demo.html)
+  en el navegador (PC o móvil). 10 lecciones, muro libre, blackbook, glosario y tienda.
+- **Unity:** abre `unity6/` → menú **`TAG-School ▸ Build Playable Demo`** → Play.
+- Qué falta y qué se ha probado: [`docs/DEMO-JUGABLE.md`](docs/DEMO-JUGABLE.md).
+- Compilar el proyecto Unity sin licencia: `python3 tools/unity-compile-check/compile_check.py`.
+
 Alcance Fase 0: solo el Drawing Engine (ENG-01…ENG-04). **No** incluye lecciones, RA, backend
 ni arte final.
 
