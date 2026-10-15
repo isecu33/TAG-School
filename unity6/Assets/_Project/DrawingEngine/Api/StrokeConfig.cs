@@ -31,6 +31,7 @@ namespace PieceBook.DrawingEngine
 
         public StrokeConfig(CapDef cap, PaintDef paint, Color color, float initialPressure = 1f)
         {
+            Tool = ToolKind.Spray; // C# 9 (Unity 6): un struct debe asignar todos sus campos en el ctor
             Cap = cap;
             Paint = paint;
             Color = color;
