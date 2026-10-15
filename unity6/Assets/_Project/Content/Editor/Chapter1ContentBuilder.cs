@@ -99,21 +99,8 @@ namespace PieceBook.Content.Editor
             return a;
         }
 
-        // A deterministic, non-empty placeholder polyline per letter inside [0.2,0.8]².
-        private static Vector2[] GenerateLetterPolyline(int index)
-        {
-            const int n = 6;
-            var pts = new Vector2[n];
-            float phase = index * 0.7f;
-            for (int i = 0; i < n; i++)
-            {
-                float t = i / (float)(n - 1);
-                float x = Mathf.Lerp(0.25f, 0.75f, t);
-                float y = 0.5f + 0.22f * Mathf.Sin(phase + t * Mathf.PI * (1 + index % 3));
-                pts[i] = new Vector2(x, y);
-            }
-            return pts;
-        }
+        private static Vector2[] GenerateLetterPolyline(int index) =>
+            HandstyleLetterTemplates.Get(index);
 
         private static AudioCatalog BuildAudioCatalog()
         {
