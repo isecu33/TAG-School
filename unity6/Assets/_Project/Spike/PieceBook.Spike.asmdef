@@ -5,6 +5,8 @@
         "PieceBook.Core",
         "PieceBook.DrawingEngine",
         "PieceBook.Lessons",
+        "PieceBook.MetaGame",
+        "PieceBook.UI",
         "Unity.InputSystem",
         "UnityEngine.UI"
     ],

@@ -10,7 +10,7 @@ day one. Each module becomes its own asmdef when it gets real code.
 | `DrawingEngine/` | `PieceBook.DrawingEngine` | ✅ Spike engine + **multicapa, Strategy de herramientas, tile-tracker (Fase 1: ENG-05..07)** |
 | `DrawingEngine/Editor` | *(none yet)* | — |
 | `Content/` | `PieceBook.Content.Editor` (builder) | ✅ Caps + paint + alfabetos handstyle+bubble + **10 lecciones (3 capítulos) + glosario + mockups (Fase 1-2: CNT-01..06)** |
-| `Spike/` | `PieceBook.Spike` (+ `.Editor`) | ⏳ Sigue presente — borrar (ENG-08) cuando la escena de `UI` esté validada en editor |
+| `Spike/` | `PieceBook.Spike` (+ `.Editor`) | ⏳ Spike + **`DemoGame`: demo jugable del bucle completo (menú `TAG-School ▸ Build Playable Demo`)** — borrar (ENG-08) cuando existan las views de `UI` |
 | `Lessons/` | `PieceBook.Lessons` | ✅ **Fase 1: modelo + parser + evaluador + runner (LES-01..05)** |
 | `ARModule/` | `PieceBook.ARModule` | ⏳ Phase 3 (loaded via Addressables) |
 | `Social/` | `PieceBook.Social` | ✅ **Fase 2: export PNG + watermark + share + mockups + replay→vídeo (SOC-01..05)** |

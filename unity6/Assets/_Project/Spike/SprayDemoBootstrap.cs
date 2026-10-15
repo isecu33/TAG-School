@@ -155,14 +155,14 @@ namespace PieceBook.Spike
 
         // ---------------------------------------------------------------- shader resolution
 
-        internal static Shader GetUnlitShader()
+        public static Shader GetUnlitShader()
         {
             return Shader.Find("Universal Render Pipeline/Unlit")
                 ?? Shader.Find("Unlit/Texture")
                 ?? Shader.Find("Sprites/Default");
         }
 
-        internal static Shader GetTransparentUnlitShader()
+        public static Shader GetTransparentUnlitShader()
         {
             // Built-in Unlit/Transparent blends the RT's alpha over the wall and works under
             // URP too. Sprites/Default is the last-resort fallback.
