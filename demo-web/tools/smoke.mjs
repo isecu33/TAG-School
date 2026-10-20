@@ -82,6 +82,13 @@ async function run(viewport, prefix) {
   await page.screenshot({ path: join(shots, `${prefix}-3-trace.png`) });
   await page.click('#acceptStep');
 
+  // Freeform: un garabato suave que no es una A no puede puntuar alto (la forma se mide siempre)
+  await drawPolyline([[0.3, 0.3], [0.7, 0.35], [0.35, 0.6], [0.65, 0.7], [0.4, 0.4]]);
+  await page.click('#evalFree');
+  const crownsScribble = await page.locator('#resultCard .crowns svg.on').count();
+  check(crownsScribble === 1, `${prefix}: garabato que no es la letra → ${crownsScribble} corona(s)`);
+  await page.click('#retryStep');
+
   // Freeform: la A más pequeña y desplazada, sin guía
   await drawPolyline(tpl, { jitter: 0.006, offset: [0.05, -0.05], scale: 0.7 });
   check(!(await page.isDisabled('#evalFree')), `${prefix}: freeform habilita Evaluar tras dibujar`);
