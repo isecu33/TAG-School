@@ -8,8 +8,8 @@ namespace PieceBook.Lessons.Runner
     /// <summary>
     /// Wires the drawing steps of a lesson to the pure Drawing Engine API (ARQUITECTURA §4.3) and
     /// scores them (LES-05). A <c>trace</c> step is evaluated against its template + tolerance; a
-    /// <c>freeform</c> step is evaluated only on the metrics it lists (no template, so Precision is
-    /// skipped, §5). The resulting crowns are handed to the <see cref="LessonRunner"/>.
+    /// <c>freeform</c> step is evaluated on the metrics it lists plus its shape against the lesson's
+    /// letter (aligned, so size and position are free); without a letter Precision is skipped (§5). The resulting crowns are handed to the <see cref="LessonRunner"/>.
     ///
     /// It reads what the player actually drew from <see cref="IDrawingCanvas.GetRecording"/> — the
     /// last stroke — so evaluation and replay share one source of truth.
@@ -28,7 +28,7 @@ namespace PieceBook.Lessons.Runner
         }
 
         /// <summary>Tolerance for a freeform step's Precision, measured after aligning to the template.</summary>
-        public const float FreeformPrecisionTolerance = 0.2f;
+        public const float FreeformPrecisionTolerance = 0.12f;
 
         /// <summary>
         /// Evaluate the current drawing step from the canvas recording and submit its crowns.
@@ -44,8 +44,8 @@ namespace PieceBook.Lessons.Runner
         /// <summary>
         /// Evaluate the current drawing step WITHOUT submitting, so the UI can show the result and
         /// let the player retry before accepting it (<see cref="LessonRunner.SubmitDrawing"/>).
-        /// A freeform step that lists Precision is scored against the lesson's trace template after
-        /// aligning the drawing to it (shape, not position) — without a template it is skipped (§5).
+        /// A freeform step is scored against the lesson's trace template after aligning the drawing to
+        /// it (shape, not position) — without a template Precision is skipped (§5).
         /// </summary>
         public EvaluationResult EvaluateCurrent()
         {
@@ -59,8 +59,10 @@ namespace PieceBook.Lessons.Runner
             }
             if (step is FreeformStep free)
             {
+                // Shape is always judged when the lesson has a letter, even if the step only lists
+                // e.g. smoothness: otherwise any smooth scribble earns three crowns.
                 var template = LessonTraceTemplate();
-                if (template != null && Array.IndexOf(free.Evaluate, TraceMetric.Precision) >= 0)
+                if (template != null)
                     return TraceEvaluator.Evaluate(StrokeMetrics.AlignToTemplate(pos, template), times, pressures,
                                                    free.Evaluate, template, FreeformPrecisionTolerance);
                 return TraceEvaluator.Evaluate(pos, times, pressures, free.Evaluate);

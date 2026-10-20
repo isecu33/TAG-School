@@ -74,6 +74,56 @@ namespace PieceBook.Lessons.Evaluation
         }
 
         /// <summary>
+        /// Line weight measured on the real line width: a spray line thickens with less pressure
+        /// (nozzle further away) and thins when the hand moves fast (<see cref="SprayWidth"/>).
+        /// Without this a mouse or finger (pressure always 1) scored a perfect weight for free.
+        /// </summary>
+        public static float LineWeight(Vector2[] positions, float[] times, float[] pressures)
+        {
+            if (positions == null || positions.Length < 3 || times == null || times.Length != positions.Length)
+                return LineWeight(pressures);
+
+            int n = positions.Length;
+            var raw = new float[n];
+            for (int i = 0; i < n; i++)
+            {
+                int a = Mathf.Max(0, i - 1), b = Mathf.Min(n - 1, i + 1);
+                float dt = times[b] - times[a];
+                raw[i] = dt > Eps ? Vector2.Distance(positions[a], positions[b]) / dt : 0f;
+            }
+            var widths = new float[n];
+            for (int i = 0; i < n; i++)
+            {
+                // 3-sample moving average: per-frame input is noisy, the hand's speed is not.
+                int a = Mathf.Max(0, i - 1), b = Mathf.Min(n - 1, i + 1);
+                float v = 0f;
+                for (int k = a; k <= b; k++) v += raw[k];
+                v /= b - a + 1;
+                float p = pressures != null && i < pressures.Length ? pressures[i] : 1f;
+                widths[i] = SprayWidth(p, v);
+            }
+            return OneMinusCv(widths);
+        }
+
+        /// <summary>Speed (canvas widths/s) below which the line keeps its full width.</summary>
+        public const float ThinStartSpeed = 0.25f;
+        /// <summary>Speed range over which the line thins down to <see cref="MaxThinning"/>.</summary>
+        public const float ThinRangeSpeed = 1.25f;
+        /// <summary>Fraction of the width lost at full speed.</summary>
+        public const float MaxThinning = 0.35f;
+
+        /// <summary>
+        /// Relative width of a spray line for a pressure (0..1) and hand speed (canvas widths/s).
+        /// Same model as the web demo's engine, so both score the same drawing the same way.
+        /// </summary>
+        public static float SprayWidth(float pressure, float speed)
+        {
+            float distance = 1f + 0.5f * (1f - Mathf.Clamp01(pressure));
+            float thin = 1f - MaxThinning * Mathf.Clamp01((speed - ThinStartSpeed) / ThinRangeSpeed);
+            return distance * thin;
+        }
+
+        /// <summary>
         /// Coverage: fraction of the template the stroke actually goes over (0..1). Precision alone
         /// only measures stroke→template distance, so a single dot on the line scores 1; coverage
         /// measures template→stroke and is used as a gate ("trace the whole letter") before scoring.

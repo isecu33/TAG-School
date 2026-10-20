@@ -8,6 +8,10 @@
 //    plantilla saca precisión 1. Se usa como puerta: por debajo de MIN_COVERAGE se repite.
 //  · alignToTemplate(): en freeform no hay guía, así que la precisión se mide tras encajar la
 //    caja del dibujo en la de la plantilla de la lección (similitud de forma, no de posición).
+//  · Con plantilla, la forma se puntúa SIEMPRE (precisión) y limita las coronas (peor de precisión
+//    y cobertura): un trazo suave que no es la letra no saca coronas.
+//  · lineWeight mide el grosor real (presión + velocidad, sprayWidth), no solo la presión: con
+//    ratón o dedo la presión es siempre 1 y antes regalaba un 100 %.
 // ---------------------------------------------------------------------------------------------
 
 const Evaluation = (() => {
@@ -100,18 +104,42 @@ const Evaluation = (() => {
     return oneMinusCv(speeds);
   }
 
-  function lineWeight(pressures) {
-    if (pressures.length < 2) return 1;
-    return oneMinusCv(pressures);
+  // Grosor relativo del spray: menos presión → boquilla más lejos → más gordo; mano rápida → más
+  // fino. Mismo modelo que StrokeMetrics.SprayWidth (Unity) y que el motor.
+  const THIN_START = 0.25, THIN_RANGE = 1.25, MAX_THIN = 0.35; // velocidad en anchos de muro/s
+  function sprayWidth(pressure, speed) {
+    const dist = 1 + 0.5 * (1 - clamp01(pressure));
+    return dist * (1 - MAX_THIN * clamp01((speed - THIN_START) / THIN_RANGE));
+  }
+
+  function lineWeight(positions, times, pressures) {
+    const n = positions.length;
+    if (n < 3 || !times || times.length !== n) return pressures.length < 2 ? 1 : oneMinusCv(pressures);
+    const raw = [];
+    for (let i = 0; i < n; i++) {
+      const a = Math.max(0, i - 1), b = Math.min(n - 1, i + 1);
+      const dt = times[b] - times[a];
+      raw.push(dt > EPS ? Math.hypot(positions[b][0] - positions[a][0], positions[b][1] - positions[a][1]) / dt : 0);
+    }
+    const widths = [];
+    for (let i = 0; i < n; i++) {
+      const a = Math.max(0, i - 1), b = Math.min(n - 1, i + 1);
+      let v = 0;
+      for (let k = a; k <= b; k++) v += raw[k];
+      widths.push(sprayWidth(pressures[i] ?? 1, v / (b - a + 1)));
+    }
+    return oneMinusCv(widths);
   }
 
   // ---- añadidos de la demo -------------------------------------------------------------------
 
+  // Acepta un trazo (lista de puntos) o varios (lista de trazos): cuenta si CUALQUIERA pasa cerca.
   function coverage(positions, template, tolerance) {
     if (!template || !positions.length) return 0;
+    const strokes = Array.isArray(positions[0][0]) ? positions : [positions];
     const probe = resample(template, 0.02);
     let hit = 0;
-    for (const q of probe) if (distToPolyline(q, positions) <= tolerance) hit++;
+    for (const q of probe) if (strokes.some((s) => s.length && distToPolyline(q, s) <= tolerance)) hit++;
     return hit / probe.length;
   }
 
@@ -136,40 +164,63 @@ const Evaluation = (() => {
     line_weight: 'Peso de línea',
   };
 
-  function evaluate(sample, metrics, template, tolerance = 0.1) {
+  const COVERAGE_TOL = 0.6; // la cobertura se mide con la misma banda que la puerta de la UI
+  const crownsFor = (v) => (v >= THREE ? 3 : v >= TWO ? 2 : 1);
+
+  function styleScores(sample, metrics) {
     const { positions, times, pressures } = sample;
     const scores = {};
     for (const m of metrics || []) {
-      if (m === 'precision') { if (template) scores[m] = precision(positions, template, tolerance); }
-      else if (m === 'smoothness') scores[m] = smoothness(positions);
+      if (m === 'smoothness') scores[m] = smoothness(positions);
       else if (m === 'speed_consistency') scores[m] = speedConsistency(positions, times);
-      else if (m === 'line_weight') scores[m] = lineWeight(pressures);
+      else if (m === 'line_weight') scores[m] = lineWeight(positions, times, pressures);
     }
-    const keys = Object.keys(scores);
-    const overall = keys.length ? keys.reduce((s, k) => s + scores[k], 0) / keys.length : 0;
-    const crowns = keys.length && positions.length ? (overall >= THREE ? 3 : overall >= TWO ? 2 : 1) : 0;
-    return { crowns, overall, scores };
+    return scores;
   }
 
-  // Varios trazos (freeform): media de cada métrica ponderada por la longitud de cada trazo.
+  function finish(scores, cov, hasShape, hasInk) {
+    const keys = Object.keys(scores);
+    const overall = keys.length ? keys.reduce((s, k) => s + scores[k], 0) / keys.length : 0;
+    let crowns = keys.length && hasInk ? crownsFor(overall) : 0;
+    if (crowns && hasShape) crowns = Math.min(crowns, crownsFor(Math.min(scores.precision, cov)));
+    return { crowns, overall, scores, coverage: cov };
+  }
+
+  // Un trazo. Con plantilla la forma se puntúa siempre, la pida la lección o no.
+  function evaluate(sample, metrics, template, tolerance = 0.1) {
+    const { positions } = sample;
+    const scores = styleScores(sample, metrics);
+    const hasShape = !!template && positions.length > 0;
+    let cov = 1;
+    if (hasShape) {
+      scores.precision = precision(positions, template, tolerance);
+      cov = coverage(positions, template, tolerance * COVERAGE_TOL);
+    }
+    return finish(scores, cov, hasShape, positions.length > 0);
+  }
+
+  // Varios trazos (freeform): estilo ponderado por la longitud de cada trazo; la forma se mide
+  // sobre el dibujo entero (todos los trazos juntos).
   function evaluateStrokes(strokes, metrics, template, tolerance) {
     const usable = strokes.filter((s) => s.positions.length >= 2);
-    if (!usable.length) return { crowns: 0, overall: 0, scores: {} };
+    if (!usable.length) return { crowns: 0, overall: 0, scores: {}, coverage: 0 };
     const total = usable.reduce((s, k) => s + length(k.positions), 0) || 1;
-    const acc = {};
+    const scores = {};
     for (const s of usable) {
-      const r = evaluate(s, metrics, template, tolerance);
+      const r = styleScores(s, metrics);
       const w = length(s.positions) / total;
-      for (const k in r.scores) acc[k] = (acc[k] || 0) + r.scores[k] * w;
+      for (const k in r) scores[k] = (scores[k] || 0) + r[k] * w;
     }
-    const keys = Object.keys(acc);
-    const overall = keys.length ? keys.reduce((s, k) => s + acc[k], 0) / keys.length : 0;
-    const crowns = keys.length ? (overall >= THREE ? 3 : overall >= TWO ? 2 : 1) : 0;
-    return { crowns, overall, scores: acc };
+    let cov = 1;
+    if (template) {
+      scores.precision = precision(usable.flatMap((s) => s.positions), template, tolerance);
+      cov = coverage(usable.map((s) => s.positions), template, tolerance * COVERAGE_TOL);
+    }
+    return finish(scores, cov, !!template, true);
   }
 
   return {
     evaluate, evaluateStrokes, coverage, alignToTemplate, resample, length, bbox,
-    precision, smoothness, speedConsistency, lineWeight, NAMES, MIN_COVERAGE,
+    precision, smoothness, speedConsistency, lineWeight, sprayWidth, NAMES, MIN_COVERAGE,
   };
 })();

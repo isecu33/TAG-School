@@ -27,7 +27,9 @@ namespace PieceBook.Tests.EditMode
         public void TileTracker_DirtyListIsUnique()
         {
             var t = new TileDirtyTracker(8);
-            var c = new Vector2(0.5f, 0.5f);
+            // Centre of tile (4,4): (0.5, 0.5) is the corner shared by four tiles, so a disc there
+            // legitimately touches 4 of them.
+            var c = new Vector2(4.5f / 8f, 4.5f / 8f);
             t.MarkDisc(c, 0.01f);
             t.MarkDisc(c, 0.01f); // same tile again
             Assert.AreEqual(1, t.DirtyTiles.Count, "Marking the same tile twice must not duplicate it.");

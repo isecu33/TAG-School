@@ -10,6 +10,7 @@ namespace PieceBook.Lessons.Evaluation
         public int Crowns;          // 1..3 for a completed attempt, 0 if nothing to score
         public float Overall;       // mean of the evaluated metric scores, 0..1
         public Dictionary<TraceMetric, float> Scores;
+        public float Coverage;      // fraction of the template the drawing goes over (1 without template)
     }
 
     /// <summary>
@@ -22,6 +23,11 @@ namespace PieceBook.Lessons.Evaluation
         // Overall thresholds → crowns.
         public const float ThreeCrowns = 0.75f;
         public const float TwoCrowns = 0.5f;
+
+        /// <summary>Coverage is probed with this fraction of the tolerance (same band as the UI gate).</summary>
+        public const float CoverageToleranceFactor = 0.6f;
+
+        private static int CrownsFor(float score) => score >= ThreeCrowns ? 3 : score >= TwoCrowns ? 2 : 1;
 
         public static EvaluationResult Evaluate(
             Vector2[] positions,
@@ -49,10 +55,22 @@ namespace PieceBook.Lessons.Evaluation
                             scores[m] = StrokeMetrics.SpeedConsistency(positions, times);
                             break;
                         case TraceMetric.LineWeight:
-                            scores[m] = StrokeMetrics.LineWeight(pressures);
+                            scores[m] = StrokeMetrics.LineWeight(positions, times, pressures);
                             break;
                     }
                 }
+            }
+
+            // With a template the drawing must look like the letter, whatever metrics the lesson
+            // lists: precision is always scored, and shape (worst of precision and coverage)
+            // caps the crowns — smooth strokes that are not the letter cannot earn a crown.
+            float coverage = 1f;
+            bool hasShape = template != null && positions != null && positions.Length > 0;
+            if (hasShape)
+            {
+                if (!scores.ContainsKey(TraceMetric.Precision))
+                    scores[TraceMetric.Precision] = StrokeMetrics.Precision(positions, template, tolerance);
+                coverage = StrokeMetrics.Coverage(positions, template, tolerance * CoverageToleranceFactor);
             }
 
             float overall = 0f;
@@ -65,9 +83,13 @@ namespace PieceBook.Lessons.Evaluation
             int crowns = 0;
             bool scored = scores.Count > 0 && positions != null && positions.Length > 0;
             if (scored)
-                crowns = overall >= ThreeCrowns ? 3 : overall >= TwoCrowns ? 2 : 1;
+            {
+                crowns = CrownsFor(overall);
+                if (hasShape)
+                    crowns = Mathf.Min(crowns, CrownsFor(Mathf.Min(scores[TraceMetric.Precision], coverage)));
+            }
 
-            return new EvaluationResult { Crowns = crowns, Overall = overall, Scores = scores };
+            return new EvaluationResult { Crowns = crowns, Overall = overall, Scores = scores, Coverage = coverage };
         }
     }
 }
