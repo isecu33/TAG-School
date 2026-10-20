@@ -76,9 +76,11 @@ namespace PieceBook.Spike.Editor
         {
             "PieceBook/SprayStamp",      // ENG-01 GPU stamping
             "PieceBook/LayerComposite",  // ENG-05 multilayer flatten/display
+            "Unlit/Transparent",         // paint surface over the wall (spike + demo)
+            "Sprites/Default",           // trace guide lines (demo)
         };
 
-        private static void EnsureShaderIncluded()
+        public static void EnsureShaderIncluded()
         {
             var so = new SerializedObject(GraphicsSettings.GetGraphicsSettings());
             var arr = so.FindProperty("m_AlwaysIncludedShaders");

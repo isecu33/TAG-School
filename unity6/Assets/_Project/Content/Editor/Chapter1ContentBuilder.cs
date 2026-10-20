@@ -22,8 +22,18 @@ namespace PieceBook.Content.Editor
         private const string GenDir = Root + "/Generated";
         private const string LessonsDir = Root + "/Lessons";
 
+        /// <summary>Folder where the generated catalogs live (read by the demo scene builder).</summary>
+        public const string GeneratedDir = GenDir;
+
         [MenuItem("TAG-School/Build MVP Content (Ch. 1-3)")]
         public static void Build()
+        {
+            var summary = BuildAssets();
+            EditorUtility.DisplayDialog("TAG-School", summary, "OK");
+        }
+
+        /// <summary>Generates/refreshes every content asset without UI. Returns a summary.</summary>
+        public static string BuildAssets()
         {
             Directory.CreateDirectory(GenDir);
 
@@ -36,8 +46,10 @@ namespace PieceBook.Content.Editor
             };
             var paint = Paint("paint_default", "All-purpose", 1f, 0.2f, 1.2f);
 
-            var handstyle = BuildAlphabet("alphabet_handstyle", "tpl_hs_", Lessons.Model.AlphabetStyle.Handstyle);
-            var bubble = BuildAlphabet("alphabet_bubble", "tpl_bub_", Lessons.Model.AlphabetStyle.Bubble);
+            var handstyle = BuildAlphabet("alphabet_handstyle", "tpl_hs_", Lessons.Model.AlphabetStyle.Handstyle,
+                                          HandstyleLetterTemplates.Get);
+            var bubble = BuildAlphabet("alphabet_bubble", "tpl_bub_", Lessons.Model.AlphabetStyle.Bubble,
+                                       BubbleLetterTemplates.Get);
             var audio = BuildAudioCatalog();
             var lessons = BuildLessonCatalog();
             var glossary = BuildGlossaryCatalog();
@@ -53,7 +65,7 @@ namespace PieceBook.Content.Editor
                           $"- lesson catalog ({lessons.lessons.Length} lessons)\n" +
                           $"- glossary + {mockups} wall mockups";
             Debug.Log("[Chapter1ContentBuilder] " + summary);
-            EditorUtility.DisplayDialog("TAG-School", summary, "OK");
+            return summary;
         }
 
         private static CapDef Cap(string id, string name, float cone, float density,
@@ -75,7 +87,8 @@ namespace PieceBook.Content.Editor
             return p;
         }
 
-        private static AlphabetDef BuildAlphabet(string id, string templatePrefix, AlphabetStyle style)
+        private static AlphabetDef BuildAlphabet(string id, string templatePrefix, AlphabetStyle style,
+                                                 System.Func<int, Vector2[]> polyline)
         {
             var a = Load<AlphabetDef>($"{GenDir}/{id}.asset") ?? Create<AlphabetDef>($"{GenDir}/{id}.asset");
             a.id = id;
@@ -89,7 +102,7 @@ namespace PieceBook.Content.Editor
                 {
                     letter = ch,
                     templateId = $"{templatePrefix}{ch}",
-                    points = GenerateLetterPolyline(i),
+                    points = polyline(i),
                     strokeOrder = new[] { 0 },
                     difficulty = 1 + (i % 3),
                 };
@@ -99,36 +112,24 @@ namespace PieceBook.Content.Editor
             return a;
         }
 
-        // A deterministic, non-empty placeholder polyline per letter inside [0.2,0.8]².
-        private static Vector2[] GenerateLetterPolyline(int index)
-        {
-            const int n = 6;
-            var pts = new Vector2[n];
-            float phase = index * 0.7f;
-            for (int i = 0; i < n; i++)
-            {
-                float t = i / (float)(n - 1);
-                float x = Mathf.Lerp(0.25f, 0.75f, t);
-                float y = 0.5f + 0.22f * Mathf.Sin(phase + t * Mathf.PI * (1 + index % 3));
-                pts[i] = new Vector2(x, y);
-            }
-            return pts;
-        }
-
         private static AudioCatalog BuildAudioCatalog()
         {
             var cat = Load<AudioCatalog>($"{GenDir}/AudioCatalog.asset")
                       ?? Create<AudioCatalog>($"{GenDir}/AudioCatalog.asset");
+            // Placeholder WAVs in Art/Audio (CORE-03); missing files just leave the entry silent.
             cat.entries = new[]
             {
-                new AudioCatalog.Entry { id = SfxId.SprayLoop, clip = null, volume = 0.8f, loop = true },
-                new AudioCatalog.Entry { id = SfxId.UiClick,   clip = null, volume = 1f,   loop = false },
-                new AudioCatalog.Entry { id = SfxId.Crown,     clip = null, volume = 1f,   loop = false },
-                new AudioCatalog.Entry { id = SfxId.Unlock,    clip = null, volume = 1f,   loop = false },
+                new AudioCatalog.Entry { id = SfxId.SprayLoop, clip = Clip("Spray/spray_loop.wav"), volume = 0.8f, loop = true },
+                new AudioCatalog.Entry { id = SfxId.UiClick,   clip = Clip("UI/click_ui.wav"),        volume = 1f,   loop = false },
+                new AudioCatalog.Entry { id = SfxId.Crown,     clip = Clip("UI/crown_earned.wav"),    volume = 1f,   loop = false },
+                new AudioCatalog.Entry { id = SfxId.Unlock,    clip = Clip("UI/unlock.wav"),          volume = 1f,   loop = false },
             };
             EditorUtility.SetDirty(cat);
             return cat;
         }
+
+        private static AudioClip Clip(string relative) =>
+            AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/_Project/Art/Audio/" + relative);
 
         // All authored lessons across the three MVP chapters, in play order.
         private static readonly string[] LessonFiles =

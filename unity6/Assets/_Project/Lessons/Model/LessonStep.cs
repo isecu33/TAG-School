@@ -21,6 +21,8 @@ namespace PieceBook.Lessons.Model
     {
         public string Media;
         public float MaxSeconds;
+        /// <summary>What the mentor says during the showcase (stands in for the clip until it exists).</summary>
+        public string Caption;
         public override StepKind Kind => StepKind.Showcase;
     }
 

@@ -5,7 +5,8 @@
   "unlocks": [],
   "glossaryRefs": ["fill", "outline"],
   "steps": [
-    { "type": "showcase", "media": "vid_fill_outline", "maxSeconds": 11 },
+    { "type": "showcase", "media": "vid_fill_outline", "maxSeconds": 11,
+      "caption": "Relleno primero, contorno después. El contorno limpia los bordes del relleno y da forma a la letra." },
     { "type": "trace", "template": "tpl_bub_S", "tolerance": 0.2,
       "metrics": ["precision", "smoothness"] },
     { "type": "freeform", "prompt": "Rellena la letra sin salirte", "evaluate": ["precision"] },

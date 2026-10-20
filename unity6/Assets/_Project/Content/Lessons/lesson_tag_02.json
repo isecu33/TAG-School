@@ -5,7 +5,8 @@
   "unlocks": [],
   "glossaryRefs": ["line_weight", "pressure"],
   "steps": [
-    { "type": "showcase", "media": "vid_line_weight", "maxSeconds": 10 },
+    { "type": "showcase", "media": "vid_line_weight", "maxSeconds": 10,
+      "caption": "La distancia de la boquilla manda: cerca, línea fina y dura; lejos, línea gorda y difusa. Mantén la misma distancia en toda la S." },
     { "type": "trace", "template": "tpl_hs_S", "tolerance": 0.2,
       "metrics": ["precision", "line_weight"] },
     { "type": "freeform", "prompt": "Traza la S variando la presión", "evaluate": ["line_weight"] },

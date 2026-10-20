@@ -5,7 +5,8 @@
   "unlocks": ["cap_ny_fat"],
   "glossaryRefs": ["handstyle", "flow", "tag"],
   "steps": [
-    { "type": "showcase", "media": "vid_handstyle_full", "maxSeconds": 14 },
+    { "type": "showcase", "media": "vid_handstyle_full", "maxSeconds": 14,
+      "caption": "Todo junto: precisión, flow, velocidad y peso de línea. Después firma tu nombre de writer sin guía." },
     { "type": "trace", "template": "tpl_hs_E", "tolerance": 0.16,
       "metrics": ["precision", "smoothness", "speed_consistency", "line_weight"] },
     { "type": "freeform", "prompt": "Firma tu nombre completo", "evaluate": ["smoothness", "speed_consistency"] },

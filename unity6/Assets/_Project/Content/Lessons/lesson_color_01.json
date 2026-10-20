@@ -5,7 +5,8 @@
   "unlocks": [],
   "glossaryRefs": ["fill", "outline", "color"],
   "steps": [
-    { "type": "showcase", "media": "vid_color_layers", "maxSeconds": 13 },
+    { "type": "showcase", "media": "vid_color_layers", "maxSeconds": 13,
+      "caption": "En una pieza el color va por capas: relleno, contorno y detalles. Traza la A con presión estable." },
     { "type": "trace", "template": "tpl_bub_A", "tolerance": 0.2,
       "metrics": ["precision", "line_weight"] },
     { "type": "freeform", "prompt": "Rellena en la capa de fill y perfila en la de outline", "evaluate": ["precision"] },

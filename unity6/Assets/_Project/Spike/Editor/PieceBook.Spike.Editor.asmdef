@@ -4,6 +4,10 @@
     "references": [
         "PieceBook.Core",
         "PieceBook.DrawingEngine",
+        "PieceBook.Lessons",
+        "PieceBook.MetaGame",
+        "PieceBook.UI",
+        "PieceBook.Content.Editor",
         "PieceBook.Spike"
     ],
     "includePlatforms": [

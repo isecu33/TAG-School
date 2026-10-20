@@ -73,6 +73,70 @@ namespace PieceBook.Lessons.Evaluation
             return OneMinusCv(pressures);
         }
 
+        /// <summary>
+        /// Coverage: fraction of the template the stroke actually goes over (0..1). Precision alone
+        /// only measures stroke→template distance, so a single dot on the line scores 1; coverage
+        /// measures template→stroke and is used as a gate ("trace the whole letter") before scoring.
+        /// The template is probed every <paramref name="step"/> units of arc length.
+        /// </summary>
+        public static float Coverage(Vector2[] positions, TraceTemplate template, float tolerance, float step = 0.02f)
+        {
+            if (positions == null || positions.Length == 0 || template == null || template.Points.Length == 0)
+                return 0f;
+
+            var stroke = new TraceTemplate(positions);
+            var pts = template.Points;
+            int probes = 0, hits = 0;
+            if (pts.Length == 1)
+                return stroke.DistanceTo(pts[0]) <= tolerance ? 1f : 0f;
+
+            for (int i = 0; i < pts.Length - 1; i++)
+            {
+                float len = Vector2.Distance(pts[i], pts[i + 1]);
+                int n = Mathf.Max(1, Mathf.CeilToInt(len / step));
+                for (int k = (i == 0 ? 0 : 1); k <= n; k++)
+                {
+                    probes++;
+                    if (stroke.DistanceTo(Vector2.Lerp(pts[i], pts[i + 1], k / (float)n)) <= tolerance) hits++;
+                }
+            }
+            return probes > 0 ? hits / (float)probes : 0f;
+        }
+
+        /// <summary>
+        /// Maps a free-hand drawing onto the template's bounding box (translate + per-axis scale).
+        /// A freeform step has no guide, so Precision is measured on the shape, not the position.
+        /// </summary>
+        public static Vector2[] AlignToTemplate(Vector2[] positions, TraceTemplate template)
+        {
+            if (positions == null || positions.Length == 0 || template == null || template.Points.Length == 0)
+                return positions;
+
+            Bounds(positions, out var aMin, out var aMax);
+            Bounds(template.Points, out var bMin, out var bMax);
+            var aSize = Vector2.Max(aMax - aMin, new Vector2(Eps, Eps));
+            var bSize = bMax - bMin;
+
+            var aligned = new Vector2[positions.Length];
+            for (int i = 0; i < positions.Length; i++)
+            {
+                var t = positions[i] - aMin;
+                aligned[i] = bMin + new Vector2(t.x / aSize.x * bSize.x, t.y / aSize.y * bSize.y);
+            }
+            return aligned;
+        }
+
+        private static void Bounds(Vector2[] pts, out Vector2 min, out Vector2 max)
+        {
+            min = pts[0];
+            max = pts[0];
+            for (int i = 1; i < pts.Length; i++)
+            {
+                min = Vector2.Min(min, pts[i]);
+                max = Vector2.Max(max, pts[i]);
+            }
+        }
+
         /// <summary>1 - coefficient of variation (std/mean), clamped to [0,1]. Steady series → 1.</summary>
         private static float OneMinusCv(float[] values)
         {
