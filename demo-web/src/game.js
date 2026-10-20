@@ -523,8 +523,26 @@
     haptic(r.crowns === 3 ? [20, 40, 20] : 15);
   }
 
+  // Fracción del muro con pintura visible (muestreo grueso del canvas de pintura).
+  const MIN_INK = 0.004, FREEFORM_TOLERANCE = 0.12;
+  function inkCoverage() {
+    const N = 96, c = document.createElement('canvas');
+    c.width = c.height = N;
+    const x = c.getContext('2d');
+    x.drawImage(paint, 0, 0, N, N);
+    const d = x.getImageData(0, 0, N, N).data;
+    let ink = 0;
+    for (let i = 3; i < d.length; i += 4) if (d[i] > 90) ink++;
+    return ink / (N * N);
+  }
+
   function evaluateTrace(step, smp) {
     if (smp.positions.length < 3) return;
+    if (inkCoverage() < MIN_INK) {
+      mentor('Casi no se ve la pintura. Acerca la boquilla (baja la distancia) y repite.');
+      engine.clear(false);
+      return;
+    }
     const cov = Evaluation.coverage(smp.positions, L.tpl.pts, step.tolerance * 0.6);
     if (cov < Evaluation.MIN_COVERAGE) {
       L.result = { fail: true };
@@ -544,18 +562,23 @@
   }
 
   function evaluateFree(step) {
+    if (inkCoverage() < MIN_INK) {
+      mentor('Casi no se ve la pintura. Acerca la boquilla (baja la distancia) y vuelve a pintar.');
+      return;
+    }
     let strokes = L.freeStrokes;
-    if (step.evaluate.includes('precision') && L.tpl) {
-      // Sin guía: se compara la forma (dibujo encajado en la caja de la plantilla).
+    if (L.tpl) {
+      // Sin guía: la forma se compara SIEMPRE (dibujo encajado en la caja de la plantilla), la
+      // pida la lección o no; si no, cualquier garabato suave sacaba 3 coronas.
       const all = strokes.flatMap((k) => k.positions);
       const a = Evaluation.bbox(all), b = Evaluation.bbox(L.tpl.pts);
       const map = ([x, y]) => [b.x0 + ((x - a.x0) / a.w) * b.w, b.y0 + ((y - a.y0) / a.h) * b.h];
       strokes = strokes.map((k) => ({ ...k, positions: k.positions.map(map) }));
     }
-    const r = Evaluation.evaluateStrokes(strokes, step.evaluate, L.tpl?.pts, L.tpl ? 0.2 : 0.1);
+    const r = Evaluation.evaluateStrokes(strokes, step.evaluate, L.tpl?.pts, FREEFORM_TOLERANCE);
     if (!r.crowns) return;
     L.result = r;
-    showResult(r, [], 'Borrar y repetir', () => {
+    showResult(r, L.tpl ? [['Forma', r.coverage]] : [], 'Borrar y repetir', () => {
       engine.clear(false); L.freeStrokes = []; $('resultCard').hidden = true; L.result = null; $('evalFree').disabled = true;
       revealWall();
     });
@@ -768,6 +791,7 @@
       for (let i = 0; i <= 80; i++) {
         const t = i / 80;
         e.update(0.08 + t * 0.84, 0.5 + 0.28 * Math.sin(t * Math.PI * 2), 1);
+        e.flush(1 / 60); // un punto por frame: velocidad de mano normal
       }
       e.end();
       cv.getContext('2d').drawImage(ink, 0, 0);

@@ -3,16 +3,32 @@
 // Mismos conceptos: cap {coneAngle, density, falloff, flowRate, overspray}, paint {opacity,
 // dripThreshold}, distancia de boquilla 0..1, interpolación Catmull-Rom, drips procedurales por
 // acumulación de pintura, undo/redo por snapshots. Coordenadas normalizadas [0,1], (0,0) abajo-izq.
+//
+// Spray, no rotulador: la lata suelta pintura POR TIEMPO, no por distancia. Los stamps de cada frame
+// se reparten la pintura de ese frame: parado se concentra (núcleo saturado que crece → drips),
+// rápido queda más fino y más claro. Al apretar escupe gotitas, y hay salpicaduras sueltas.
 // ---------------------------------------------------------------------------------------------
 
 const SprayEngine = (() => {
   const DRIP_GRID = 40;          // celdas por lado del acumulador de pintura (PaintAccumulator)
-  const DRIP_GAIN = 1.5;         // cuánto suma cada pasada al acumulador
+  const DRIP_GAIN = 1;           // cuánto suma cada stamp al acumulador (≈0,5 s parado → drip)
   const DRIP_DECAY = 0.985;      // "secado" por frame
   const MAX_DRIPS = 48;
   const UNDO_STEPS = 12;
+  const REF_SPEED = 0.6;         // anchos de muro/s a los que un stamp lleva su pintura nominal
+  const FRAME_DT = 1 / 60;
 
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+
+  // Mismo modelo de grosor que Evaluation.sprayWidth / StrokeMetrics.SprayWidth (Unity).
+  const THIN_START = 0.25, THIN_RANGE = 1.25, MAX_THIN = 0.35;
+  const speedThin = (v) => 1 - MAX_THIN * clamp((v - THIN_START) / THIN_RANGE, 0, 1);
+
+  function transparent(hex) {
+    const h = hex.replace('#', '');
+    const n = parseInt(h.length === 3 ? h.replace(/./g, '$&$&') : h, 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},0)`;
+  }
 
   function catmull(p0, p1, p2, p3, t) {
     const t2 = t * t, t3 = t2 * t;
@@ -40,6 +56,12 @@ const SprayEngine = (() => {
       this.cfg = null;
       this.pts = [];
       this.carry = 0;
+      this.queue = [];            // stamps de este frame, se pintan en flush()
+      this.speed = REF_SPEED;     // velocidad de la mano suavizada (anchos de muro/s)
+      this.dwell = 0;             // segundos parado apretando
+      this.noise = 1;             // variación lenta del caudal (la lata no es perfecta)
+      this.spit = false;
+      this.lastTick = 0;
       this.movedThisFrame = false;
       this.stampsThisFrame = 0;
       this.onChange = null;
@@ -54,6 +76,11 @@ const SprayEngine = (() => {
       this.active = true;
       this.pts = [];
       this.carry = 0;
+      this.queue = [];
+      this.speed = 0;
+      this.dwell = 0;
+      this.noise = 0.9 + Math.random() * 0.2;
+      this.spit = true;           // la primera pasada escupe
     }
 
     update(x, y, pressure = 1) {
@@ -65,7 +92,7 @@ const SprayEngine = (() => {
       this.pts.push(p);
       this.movedThisFrame = true;
       const n = this.pts.length;
-      if (n === 1) { this.stamp(p[0], p[1]); return; }
+      if (n === 1) { this.queue.push(p); return; }
       const p0 = this.pts[n - 3] || this.pts[n - 2];
       const p1 = this.pts[n - 2];
       const p2 = this.pts[n - 1];
@@ -74,6 +101,12 @@ const SprayEngine = (() => {
 
     end() {
       if (!this.active) return;
+      this.flush(FRAME_DT);
+      // Al soltar, a veces la válvula suelta alguna gota.
+      const last = this.pts[this.pts.length - 1];
+      if (last && Math.random() < 0.35) {
+        this.splatter(last[0], last[1], this.radius(this.cfg.cap, this.effDistance()), 2 + Math.floor(Math.random() * 3));
+      }
       this.active = false;
       this.onChange && this.onChange();
     }
@@ -106,12 +139,12 @@ const SprayEngine = (() => {
     get canRedo() { return this.redoStack.length > 0; }
     get activeDrips() { return this.drips.length; }
 
-    // Llamar una vez por frame: spray "en parado" (acumula → drips) + animación de drips.
-    tick() {
-      if (this.active && !this.movedThisFrame && this.pts.length) {
-        const p = this.pts[this.pts.length - 1];
-        this.stamp(p[0], p[1], 0.6);
-      }
+    // Llamar una vez por frame: pinta lo de este frame (repartiendo la pintura por tiempo), spray
+    // "en parado" (se concentra → drips) y animación de drips.
+    tick(now = performance.now()) {
+      const dt = this.lastTick ? clamp((now - this.lastTick) / 1000, 0.004, 0.05) : FRAME_DT;
+      this.lastTick = now;
+      if (this.active) this.flush(dt);
       this.movedThisFrame = false;
       for (let i = 0; i < this.acc.length; i++) this.acc[i] *= DRIP_DECAY;
       this.stepDrips();
@@ -128,15 +161,42 @@ const SprayEngine = (() => {
       return clamp(d, 0, 1);
     }
 
+    // Escala de muro: un skinny deja una línea de ~3 % del ancho, un fat de ~9 %.
     radius(cap, d) {
       const half = (cap.coneAngle * Math.PI) / 360;
-      return this.S * (0.0065 + Math.tan(half) * (0.04 + 0.22 * d));
+      return this.S * (0.011 + Math.tan(half) * (0.07 + 0.3 * d));
+    }
+
+    // Pinta los stamps de este frame. La pintura del frame se reparte entre ellos: pocos stamps
+    // (mano lenta) → cada uno lleva más; muchos (mano rápida) → línea más fina y más clara.
+    flush(dt) {
+      const q = this.queue;
+      this.queue = [];
+      let path = 0;
+      for (let i = 1; i < q.length; i++) path += Math.hypot(q[i][0] - q[i - 1][0], q[i][1] - q[i - 1][1]);
+      this.speed += (path / this.S / dt - this.speed) * 0.35;
+      this.noise = clamp(this.noise + (Math.random() - 0.5) * 0.06, 0.8, 1.2);
+
+      if (!q.length) {
+        // Parado apretando: toda la pintura cae en el mismo sitio. El núcleo se satura y crece un
+        // poco (la pintura se extiende), y el acumulador dispara drips.
+        if (!this.pts.length) return;
+        this.dwell += dt;
+        const p = this.pts[this.pts.length - 1];
+        const ramp = 0.4 + 0.6 * Math.min(this.dwell / 0.3, 1);
+        this.stamp(p[0], p[1], ramp * this.noise, 1 + Math.min(this.dwell, 2) * 0.18);
+        return;
+      }
+      this.dwell = 0;
+      const thin = speedThin(this.speed);
+      const weight = clamp(Math.pow(REF_SPEED / Math.max(this.speed, 0.05), 0.8), 0.25, 1.8) * this.noise;
+      for (const [x, y] of q) this.stamp(x, y, weight, thin);
     }
 
     strokeSegment(p0, p1, p2, p3) {
       const cap = this.cfg.cap;
       const R = this.radius(cap, this.effDistance());
-      const spacing = Math.max(1, R * 0.35);
+      const spacing = Math.max(1, R * 0.3);
       const len = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]);
       const steps = Math.max(1, Math.ceil(len / 2));
       let prev = p1;
@@ -148,7 +208,7 @@ const SprayEngine = (() => {
           const t = need / seg;
           const x = prev[0] + (q[0] - prev[0]) * t;
           const y = prev[1] + (q[1] - prev[1]) * t;
-          this.stamp(x, y);
+          this.queue.push([x, y]);
           prev = [x, y];
           seg -= need;
           this.carry = 0;
@@ -170,24 +230,48 @@ const SprayEngine = (() => {
       const hard = 0.1 + (bucket / 4) * 0.65;
       grad.addColorStop(0, color);
       grad.addColorStop(hard, color);
-      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      // Transparente del MISMO color: hacia negro transparente el borde se oscurece (anillos).
+      grad.addColorStop(1, transparent(color));
       g.fillStyle = grad;
       g.fillRect(0, 0, 64, 64);
       this.sprites.set(key, s);
       return s;
     }
 
-    stamp(x, y, weight = 1) {
+    // Gotitas sueltas alrededor de (x, y): el "escupitajo" al apretar y las salpicaduras.
+    splatter(x, y, R, count) {
+      const ctx = this.ctx;
+      ctx.fillStyle = this.cfg.color;
+      for (let i = 0; i < count; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = R * (0.8 + Math.random() * 1.6);
+        const sz = 0.8 + Math.random() * Math.random() * (1.5 + R * 0.12);
+        ctx.globalAlpha = 0.6 + Math.random() * 0.4;
+        ctx.beginPath();
+        ctx.arc(x + Math.cos(a) * r, y + Math.sin(a) * r, sz, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    stamp(x, y, weight = 1, scale = 1) {
       const { cap, paint, color } = this.cfg;
       const ctx = this.ctx;
       const d = this.effDistance();
-      const R = this.radius(cap, d);
+      const R = this.radius(cap, d) * scale;
       const flow = clamp(cap.flowRate * (1.15 - 0.75 * d), 0.04, 0.5) * (paint.opacity ?? 1) * weight;
       this.stampsThisFrame++;
+      if (this.spit) {
+        // Al apretar la lata escupe: gotas más gordas alrededor del primer punto.
+        this.spit = false;
+        this.splatter(x, y, R, 4 + Math.floor(Math.random() * 6));
+      } else if (Math.random() < 0.025 * weight) {
+        this.splatter(x, y, R, 1);
+      }
 
       // Núcleo: dos manchas suaves con jitter (la dureza del borde viene de falloff).
       const spr = this.sprite(color, cap.falloff);
-      ctx.globalAlpha = flow * 0.55;
+      ctx.globalAlpha = clamp(flow * 0.38, 0, 1);
       for (let k = 0; k < 2; k++) {
         const jx = (Math.random() - 0.5) * R * 0.25;
         const jy = (Math.random() - 0.5) * R * 0.25;
@@ -226,7 +310,9 @@ const SprayEngine = (() => {
       const cx = clamp(Math.floor(x / cell), 0, DRIP_GRID - 1);
       const cy = clamp(Math.floor(y / (this.H / DRIP_GRID)), 0, DRIP_GRID - 1);
       const i = cy * DRIP_GRID + cx;
-      this.acc[i] += flow * (spacing / cell) * DRIP_GAIN * (R / (this.S * 0.012));
+      // Densidad de pintura, no cantidad: un cap gordo reparte la misma pintura en más área. Así
+      // solo gotea donde se concentra (parado o pasando muchas veces), con cualquier cap.
+      this.acc[i] += flow * 0.3 * DRIP_GAIN;
       const threshold = this.cfg.paint.dripThreshold ?? 1.2;
       if (this.acc[i] > threshold && this.drips.length < MAX_DRIPS) {
         this.acc[i] = 0.25;
