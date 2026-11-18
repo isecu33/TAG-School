@@ -131,8 +131,14 @@ unity6/
       Input/StrokeInputController  pointer→UV; Pencil/touch/mouse
       Diagnostics/              FrameStats + LatencyProbe
     Content/                    caps + paint (generados)
-    Spike/                      PieceBook.Spike (harness; borrar en Fase 1)
-  Assets/Tests/EditMode/        pooling, Catmull-Rom, accumulator, EventBus
+    Spike/                      PieceBook.Spike: harness Fase 0 (SprayDemoBootstrap,
+                                DemoHud, WallTextureFactory, SpikeDefaults) + demo
+                                jugable del bucle completo (DemoGame)
+      Editor/                   SpikeSetup (Setup Phase 0 Spike), DemoSceneBuilder
+                                (Build Playable Demo)
+  Assets/Tests/EditMode/        14 suites: core/servicios, motor + hardening,
+                                contenido, lecciones, metajuego, social, UI,
+                                replay, smoke (MVP/slice)
 ```
 
 ## Limitaciones conocidas (spike, a propósito)
