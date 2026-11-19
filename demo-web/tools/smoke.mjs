@@ -25,8 +25,9 @@ async function run(viewport, prefix) {
   const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1 });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(`${prefix}: ${e.message}`));
-  // ERR_INVALID_URL: el src hostil del save manipulado (ver bloque «Save manipulado»), esperado.
-  page.on('console', (m) => { if (m.type() === 'error' && !/fonts\.(googleapis|gstatic)|ERR_INVALID_URL/.test(m.text())) errors.push(`${prefix}: ${m.text()}`); });
+  // allowInvalidUrl: solo activo en el bloque «Save manipulado» (el src hostil da ERR_INVALID_URL a propósito).
+  let allowInvalidUrl = false;
+  page.on('console', (m) => { if (m.type() === 'error' && !/fonts\.(googleapis|gstatic)/.test(m.text()) && !(allowInvalidUrl && /ERR_INVALID_URL/.test(m.text()))) errors.push(`${prefix}: ${m.text()}`); });
   await page.goto(page_url);
   await page.waitForTimeout(300);
 
@@ -130,7 +131,8 @@ async function run(viewport, prefix) {
     p.book.push({ title: 'noimg', date: '2026-01-01' });
     localStorage.setItem('tagschool.demo.v1', JSON.stringify(p));
   }, evil);
-  await page.reload({ waitUntil: 'domcontentloaded' });
+  allowInvalidUrl = true;
+  await page.reload();
   await page.waitForTimeout(300);
   await page.click('#tab-book');
   check((await page.locator('.piece').count()) === 4, `${prefix}: blackbook pinta las 4 piezas (incl. manipuladas)`);
@@ -141,7 +143,8 @@ async function run(viewport, prefix) {
   check((await page.locator('.piece').nth(3).locator('img').count()) === 0, `${prefix}: sin img ausente`);
   check(((await page.locator('.piece').nth(0).locator('img').getAttribute('src')) || '').startsWith('data:image/'), `${prefix}: pieza original conserva su img`);
   await page.evaluate((r) => localStorage.setItem('tagschool.demo.v1', r), rawSave);
-  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.reload();
+  allowInvalidUrl = false;
   await page.waitForTimeout(300);
   await page.click('#tab-book');
   await page.click('.piece');
@@ -168,7 +171,7 @@ async function run(viewport, prefix) {
   await page.screenshot({ path: join(shots, `${prefix}-9-muro-libre.png`) });
 
   // Persistencia
-  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.reload();
   await page.waitForTimeout(300);
   check(!(await page.isVisible('#onboard')) && (await page.textContent('#writerChip')) === 'NOVA', `${prefix}: el progreso persiste al recargar`);
   await ctx.close();
