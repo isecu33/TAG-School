@@ -42,11 +42,32 @@
     if (raw) P = Object.assign(fresh(), JSON.parse(raw));
   } catch (_) { /* sin almacenamiento: la demo funciona igual, sin persistir */ }
 
-  function save() {
+  const SAVE_TOAST_MS = 4000;
+  const SAVE_FAIL_MSG = 'No se pudo guardar tu progreso: almacenamiento lleno o bloqueado.';
+  let saveFailNotified = false;
+
+  function showToast(msg) {
+    try {
+      const el = document.createElement('div');
+      el.setAttribute('role', 'status');
+      el.setAttribute('aria-live', 'polite');
+      el.textContent = msg;
+      el.style.cssText = 'position:fixed;left:50%;bottom:max(16px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;max-width:90vw;padding:10px 16px;border-radius:10px;background:#e8452c;color:#fff;font:600 14px system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.4);pointer-events:none';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), SAVE_TOAST_MS);
+    } catch (_) { /* el aviso es opcional: no debe romper save() */ }
+  }
+
+  function save({ quiet = false } = {}) {
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(P));
+      saveFailNotified = false;
       return true;
     } catch (_) {
+      if (!saveFailNotified) {
+        saveFailNotified = true;
+        if (!quiet) showToast(SAVE_FAIL_MSG);
+      }
       return false;
     }
   }
@@ -688,7 +709,7 @@
   function addToBook(entry) {
     P.book.unshift({ id: Date.now().toString(36), date: new Date().toISOString().slice(0, 10), writer: P.writer, ...entry });
     while (P.book.length > BOOK_LIMIT) P.book.pop();
-    if (save()) return true;
+    if (save({ quiet: true })) return true;
     P.book.shift();
     return false;
   }
