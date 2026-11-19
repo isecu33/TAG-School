@@ -7,6 +7,7 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const safeImg = (s) => (typeof s === 'string' && s.startsWith('data:image/') ? s : '');
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
   const COINS_PER_CROWN = 10;      // ProgressionService.CoinsPerCrown
@@ -696,12 +697,15 @@
   function openBook() {
     show('book', 'book');
     $('bookGrid').innerHTML = P.book.length
-      ? P.book.map((b, i) => `
+      ? P.book.map((b, i) => {
+        const img = safeImg(b.img);
+        return `
         <button type="button" class="piece" data-piece="${i}">
-          <img src="${b.img}" alt="${esc(b.title)}">
+          ${img ? `<img src="${esc(img)}" alt="${esc(b.title)}">` : ''}
           <span class="t">${esc(b.title)}</span>
-          <span class="d">${esc(b.writer || '')} · ${esc(b.date)}${b.crowns ? ' · ' + b.crowns + '♛' : ''}</span>
-        </button>`).join('')
+          <span class="d">${esc(b.writer || '')} · ${esc(b.date)}${b.crowns ? ' · ' + esc(b.crowns) + '♛' : ''}</span>
+        </button>`;
+      }).join('')
       : `<p class="empty">Aún no hay piezas. Termina una lección y guarda tu dibujo libre, o pinta algo en el muro libre.</p>`;
   }
   $('bookGrid').addEventListener('click', (e) => {
