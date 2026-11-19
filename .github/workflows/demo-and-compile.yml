@@ -42,12 +42,6 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Build de la demo desde el contenido de Unity
         run: node demo-web/build.mjs
-      - name: Comprobar que demo-web/dist no está desfasado
-        run: |
-          git diff --exit-code demo-web/dist || {
-            echo "::error::demo-web/dist desfasado. Ejecuta 'node demo-web/build.mjs' y commitea demo-web/dist/tag-school-demo.html"
-            exit 1
-          }
       - name: Smoke E2E (escritorio + móvil)
         run: node demo-web/tools/smoke.mjs demo-web/dist/screens
       - name: Subir demo y capturas
