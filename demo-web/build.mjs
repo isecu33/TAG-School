@@ -77,7 +77,7 @@ for (const l of lessons) {
   }
 }
 
-const content = { caps, paint, lessons, glossary, templates, builtAt: new Date().toISOString().slice(0, 10) };
+const content = { caps, paint, lessons, glossary, templates };
 
 // ---- ensamblado ----------------------------------------------------------------------------
 const src = (f) => read(join(here, 'src', f));

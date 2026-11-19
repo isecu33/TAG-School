@@ -830,7 +830,7 @@
 
   $('footInfo').textContent =
     `Contenido generado desde el proyecto Unity (${lessons.length} lecciones, ${CONTENT.glossary.length} términos, ` +
-    `${caps.length} caps, ${Object.keys(CONTENT.templates).length} plantillas) · build ${CONTENT.builtAt}`;
+    `${caps.length} caps, ${Object.keys(CONTENT.templates).length} plantillas)`;
   paintWall();
   renderTools();
   renderStats();
