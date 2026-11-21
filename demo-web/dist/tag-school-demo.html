@@ -1084,10 +1084,22 @@ const Evaluation = (() => {
   function fresh() {
     return { writer: '', crowns: {}, coins: 0, streak: 0, unlocked: ['cap_skinny'], book: [], sound: true, openAll: false };
   }
+  const isPlainObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+  // Valida el save antes de mezclarlo; si algo no cuadra, descarta el save entero.
+  function parseSave(raw) {
+    const parsed = JSON.parse(raw);
+    if (!isPlainObject(parsed)) return fresh();
+    const has = (k) => Object.prototype.hasOwnProperty.call(parsed, k);
+    if (has('book') && !Array.isArray(parsed.book)) return fresh();
+    if (has('unlocked') && !Array.isArray(parsed.unlocked)) return fresh();
+    if (has('crowns') && !isPlainObject(parsed.crowns)) return fresh();
+    if (has('coins') && !(typeof parsed.coins === 'number' && Number.isFinite(parsed.coins))) return fresh();
+    return Object.assign(fresh(), parsed);
+  }
   let P = fresh();
   try {
     const raw = localStorage.getItem(SAVE_KEY);
-    if (raw) P = Object.assign(fresh(), JSON.parse(raw));
+    if (raw) P = parseSave(raw);
   } catch (_) { /* sin almacenamiento: la demo funciona igual, sin persistir */ }
 
   const SAVE_TOAST_MS = 4000;
