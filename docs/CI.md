@@ -24,7 +24,7 @@ Crea tres secrets en su lugar y deja `UNITY_LICENSE` sin definir:
 
 ## 2. Ejecutar
 
-- Automático: haz push a la rama `claude/missing-plans-l7bknn` (o abre el PR) — el job corre solo.
+- Automático: haz push a la rama `main` (o abre el PR) — el job corre solo.
 - Manual: pestaña **Actions ▸ Unity Tests (EditMode) ▸ Run workflow**.
 
 Los resultados aparecen como *check* en el commit/PR ("EditMode test results") y como artefacto

@@ -34,7 +34,7 @@ estructurales (abajo). **No se reescribe lógica.**
 ## 2. El shell (lo crea el usuario en el Hub)
 
 Crear en Unity Hub un proyecto **Universal 3D (URP)** con **Unity 6000.6.0f1**, carpeta `unity6/`
-dentro del repo, y subirlo a la rama `claude/missing-plans-l7bknn`. Debe incluir:
+dentro del repo, y subirlo a la rama `main`. Debe incluir:
 `unity6/ProjectSettings/`, `unity6/Packages/manifest.json`, `unity6/Assets/` (lo que genere el
 template). No subir `Library/`, `Temp/`, `obj/` (ya los ignora `.gitignore`).
 
