@@ -25,7 +25,9 @@ async function run(viewport, prefix) {
   const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1 });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(`${prefix}: ${e.message}`));
-  page.on('console', (m) => { if (m.type() === 'error' && !/fonts\.(googleapis|gstatic)/.test(m.text())) errors.push(`${prefix}: ${m.text()}`); });
+  // allowInvalidUrl: solo activo en el bloque «Save manipulado» (el src hostil da ERR_INVALID_URL a propósito).
+  let allowInvalidUrl = false;
+  page.on('console', (m) => { if (m.type() === 'error' && !/fonts\.(googleapis|gstatic)/.test(m.text()) && !(allowInvalidUrl && /ERR_INVALID_URL/.test(m.text()))) errors.push(`${prefix}: ${m.text()}`); });
   await page.goto(page_url);
   await page.waitForTimeout(300);
 
@@ -118,6 +120,33 @@ async function run(viewport, prefix) {
   // Blackbook + mockup
   await page.click('#tab-book');
   check((await page.locator('.piece').count()) === 1, `${prefix}: el blackbook tiene 1 pieza`);
+
+  // Save manipulado: b.img hostil no puede inyectar atributos ni romper la rejilla
+  const evil = 'data:image/png;base64,x" onerror="window.__xss=1';
+  const rawSave = await page.evaluate(() => localStorage.getItem('tagschool.demo.v1'));
+  await page.evaluate((evilImg) => {
+    const p = JSON.parse(localStorage.getItem('tagschool.demo.v1'));
+    p.book.push({ title: 'evil', img: evilImg, date: '2026-01-01' });
+    p.book.push({ title: 'js', img: 'javascript:alert(1)', date: '2026-01-01' });
+    p.book.push({ title: 'noimg', date: '2026-01-01' });
+    localStorage.setItem('tagschool.demo.v1', JSON.stringify(p));
+  }, evil);
+  allowInvalidUrl = true;
+  await page.reload();
+  await page.waitForTimeout(300);
+  await page.click('#tab-book');
+  check((await page.locator('.piece').count()) === 4, `${prefix}: blackbook pinta las 4 piezas (incl. manipuladas)`);
+  check((await page.locator('.piece img[onerror]').count()) === 0, `${prefix}: ninguna img con onerror`);
+  check((await page.evaluate(() => window.__xss)) === undefined, `${prefix}: window.__xss sin definir`);
+  check((await page.locator('.piece').nth(1).locator('img').getAttribute('src')) === evil, `${prefix}: src hostil queda como string único`);
+  check((await page.locator('.piece').nth(2).locator('img').count()) === 0, `${prefix}: javascript: sin img`);
+  check((await page.locator('.piece').nth(3).locator('img').count()) === 0, `${prefix}: sin img ausente`);
+  check(((await page.locator('.piece').nth(0).locator('img').getAttribute('src')) || '').startsWith('data:image/'), `${prefix}: pieza original conserva su img`);
+  await page.evaluate((r) => localStorage.setItem('tagschool.demo.v1', r), rawSave);
+  await page.reload();
+  allowInvalidUrl = false;
+  await page.waitForTimeout(300);
+  await page.click('#tab-book');
   await page.click('.piece');
   await page.click('#mockupPicker [data-wall="train"]');
   await page.waitForTimeout(150);

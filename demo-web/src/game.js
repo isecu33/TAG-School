@@ -7,6 +7,7 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const safeImg = (s) => (typeof s === 'string' && s.startsWith('data:image/') ? s : '');
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
   const COINS_PER_CROWN = 10;      // ProgressionService.CoinsPerCrown
@@ -42,11 +43,32 @@
     if (raw) P = Object.assign(fresh(), JSON.parse(raw));
   } catch (_) { /* sin almacenamiento: la demo funciona igual, sin persistir */ }
 
-  function save() {
+  const SAVE_TOAST_MS = 4000;
+  const SAVE_FAIL_MSG = 'No se pudo guardar tu progreso. Libera espacio o desactiva el modo privado y vuelve a intentarlo.';
+  let saveFailNotified = false;
+
+  function showToast(msg) {
+    try {
+      const el = document.createElement('div');
+      el.setAttribute('role', 'status');
+      el.setAttribute('aria-live', 'polite');
+      el.textContent = msg;
+      el.style.cssText = 'position:fixed;left:50%;bottom:max(16px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;max-width:90vw;padding:10px 16px;border-radius:var(--r);background:var(--warn);color:var(--night);font:600 14px var(--font-body);box-shadow:0 4px 16px rgba(0,0,0,.4);pointer-events:none';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), SAVE_TOAST_MS);
+    } catch (_) { /* el aviso es opcional: no debe romper save() */ }
+  }
+
+  function save({ quiet = false } = {}) {
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(P));
+      saveFailNotified = false;
       return true;
     } catch (_) {
+      if (!saveFailNotified) {
+        saveFailNotified = true;
+        if (!quiet) showToast(SAVE_FAIL_MSG);
+      }
       return false;
     }
   }
@@ -688,7 +710,7 @@
   function addToBook(entry) {
     P.book.unshift({ id: Date.now().toString(36), date: new Date().toISOString().slice(0, 10), writer: P.writer, ...entry });
     while (P.book.length > BOOK_LIMIT) P.book.pop();
-    if (save()) return true;
+    if (save({ quiet: true })) return true;
     P.book.shift();
     return false;
   }
@@ -696,12 +718,15 @@
   function openBook() {
     show('book', 'book');
     $('bookGrid').innerHTML = P.book.length
-      ? P.book.map((b, i) => `
+      ? P.book.map((b, i) => {
+        const img = safeImg(b.img);
+        return `
         <button type="button" class="piece" data-piece="${i}">
-          <img src="${b.img}" alt="${esc(b.title)}">
+          ${img ? `<img src="${esc(img)}" alt="${esc(b.title)}">` : ''}
           <span class="t">${esc(b.title)}</span>
-          <span class="d">${esc(b.writer || '')} · ${esc(b.date)}${b.crowns ? ' · ' + b.crowns + '♛' : ''}</span>
-        </button>`).join('')
+          <span class="d">${esc(b.writer || '')} · ${esc(b.date)}${b.crowns ? ' · ' + esc(b.crowns) + '♛' : ''}</span>
+        </button>`;
+      }).join('')
       : `<p class="empty">Aún no hay piezas. Termina una lección y guarda tu dibujo libre, o pinta algo en el muro libre.</p>`;
   }
   $('bookGrid').addEventListener('click', (e) => {
